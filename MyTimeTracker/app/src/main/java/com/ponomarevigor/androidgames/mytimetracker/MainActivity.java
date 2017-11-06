@@ -13,14 +13,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.ponomarevigor.androidgames.mytimetracker.Database.TaskModel;
-import com.ponomarevigor.androidgames.mytimetracker.Task.Task;
+import com.ponomarevigor.androidgames.mytimetracker.Database.Task;
+import com.ponomarevigor.androidgames.mytimetracker.ItemTaskTouchHelper.ItemTaskTouchHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,23 +29,14 @@ import java.util.List;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-/*
-    Обдумать список тасков.
-    taskModel и tasks почти одно и тоже.
-    TaskModel не разрешает использовать функции таймера, или я коряво затестил.
-    Но проект при сборке выдал ошибку.
-    Можно выкинуть tasks, а к каждому объекту taskModel привязать таймеры.
-    Тогда не придется вызывать функцию initData.
- */
-
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    RecyclerView recyclerView;
-    List<Task> tasks;
-    RealmResults<TaskModel> taskModels;
-    RecyclerViewTaskAdapter taskAdapter;
     Realm realm;
+    RealmResults<Task> tasks;
+    RecyclerView recyclerView;
+    RecyclerViewTaskAdapter taskAdapter;
+    ItemTouchHelper touchHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,16 +61,20 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        navigationView.setCheckedItem(R.id.nav_3);
         /////////////////////////////////////////////////////
         Realm.init(this);
         realm = Realm.getDefaultInstance();
-        tasks = new ArrayList<Task>();
-        initData(); //Вытаскиваем данные из TaskModel
+        tasks = realm.where(Task.class).findAllSorted("position");
 
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
         taskAdapter = new RecyclerViewTaskAdapter(this, tasks, realm);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(taskAdapter);
+        recyclerView.setItemViewCacheSize(tasks.size());
+        ItemTouchHelper.Callback callback = new ItemTaskTouchHelper(taskAdapter);
+        touchHelper = new ItemTouchHelper(callback);
+        touchHelper.attachToRecyclerView(recyclerView);
     }
 
     private void createTask()
@@ -99,56 +95,27 @@ public class MainActivity extends AppCompatActivity
                                 String name = tvName.getText().toString();
                                 String description = tvDesc.getText().toString();
 
-                                Task task = new Task(name, description);
-                                tasks.add(task);
-
                                 realm.beginTransaction();
-                                TaskModel taskModel = realm.createObject(TaskModel.class);
-                                taskModel.setName(name);
+                                Task taskModel = realm.createObject(Task.class);
+                                if (name.equals(""))
+                                    taskModel.setName("Task: " + (tasks.size()-1));
+                                else
+                                    taskModel.setName(name);
                                 taskModel.setDescription(description);
                                 long createdTime = System.currentTimeMillis();
                                 taskModel.setTimeCreated(createdTime);
-                                taskModel.setState(TaskModel.TASK_CREATED);
+                                taskModel.setState(Task.TASK_CREATED);
                                 taskModel.setDuration(0);
+                                taskModel.setPosition(tasks.size()-1);
                                 realm.commitTransaction();
 
+                                recyclerView.setItemViewCacheSize(tasks.size());
                                 taskAdapter.notifyDataSetChanged();
                             }
                         });
         builder.setView(v);
         AlertDialog alert = builder.create();
         alert.show();
-    }
-
-    private void initData()
-    {
-        taskModels = realm.where(TaskModel.class).findAll();
-        int size = taskModels.size();
-        for (int i = 0; i < size; i++) {
-            TaskModel taskModel = taskModels.get(i);
-            String name = taskModel.getName();
-            String description = taskModel.getDescription();
-            Task task = new Task(name, description);
-            task.setTimeStart(taskModel.getTimeStart());
-            task.setTimePause(taskModel.getTimePause());
-            task.setTimeFinish(taskModel.getTimeFinish());
-            task.setDuration(taskModel.getDuration());
-            int state = taskModel.getState();
-            task.setState(state);
-            switch (state)
-            {
-                case TaskModel.TASK_RUNNING:
-                    task.setTimeStart();
-                    break;
-                case TaskModel.TASK_PAUSED:
-                    task.setTimePause();
-                    break;
-                case TaskModel.TASK_STOPPED:
-                    task.setTimeStop();
-                    break;
-            }
-            tasks.add(task);
-        }
     }
 
     @Override
@@ -193,7 +160,7 @@ public class MainActivity extends AppCompatActivity
     private void clearAllTask()
     {
         realm.beginTransaction();
-        realm.where(TaskModel.class).findAll().deleteAllFromRealm();
+        realm.where(Task.class).findAll().deleteAllFromRealm();
         realm.commitTransaction();
 
         Intent intent = getIntent();

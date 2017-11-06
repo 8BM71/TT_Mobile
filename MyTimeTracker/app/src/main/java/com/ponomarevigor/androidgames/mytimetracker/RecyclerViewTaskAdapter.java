@@ -2,7 +2,10 @@ package com.ponomarevigor.androidgames.mytimetracker;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.SystemClock;
+import android.support.design.widget.Snackbar;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,8 +13,8 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.ponomarevigor.androidgames.mytimetracker.Database.TaskModel;
-import com.ponomarevigor.androidgames.mytimetracker.Task.Task;
+import com.ponomarevigor.androidgames.mytimetracker.Database.Task;
+import com.ponomarevigor.androidgames.mytimetracker.ItemTaskTouchHelper.ItemTaskTouchHelperAdapter;
 
 import java.util.List;
 
@@ -22,31 +25,15 @@ import io.realm.RealmResults;
  * Created by Igorek on 12.10.2017.
  */
 
-/*
-    Привести в человеческих вид.
-    Переписать слушатели кнопок.
-    Объединить в функции. Убрать мусор.
-
-    Откорректировать обновление адаптера при добавлении или удалении тасков.
- */
-
-public class RecyclerViewTaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private Context context;
+public class RecyclerViewTaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements ItemTaskTouchHelperAdapter {
+    Context context;
     List<Task> tasks;
-    RealmResults<TaskModel> taskModels;
     Realm realm;
-    int[] checkPositions;
 
     public RecyclerViewTaskAdapter(Context context, List<Task> tasks, Realm realm) {
         this.context = context;
         this.tasks = tasks;
         this.realm = realm;
-        checkPositions = new int[100];
-    }
-
-    @Override
-    public long getItemId(int position) {
-        return position;
     }
 
     @Override
@@ -62,159 +49,136 @@ public class RecyclerViewTaskAdapter extends RecyclerView.Adapter<RecyclerView.V
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
         final ViewHolderTask vh = (ViewHolderTask) holder;
-        tasks.get(position).setTextView(vh.textTime);
         final Task task = tasks.get(position);
-
-        //Чтобы ничего не сбивалось при добавлении элемента.
-        //Костыль, который нужно избежать
-        if (checkPositions[position] == 1) return;
-        checkPositions[position] = 1;
-
         vh.textName.setText(task.getName());
-
-        if (task.getName().equals(""))
-        {
-            vh.textName.setText("Task: " + position);
-        }
-
         vh.textDescription.setText(task.getDescription());
-        if (task.getDescription().equals(""))
+
+        if (task.getState() == Task.TASK_CREATED)
         {
-            vh.textDescription.setText("Description: " + position);
+            vh.create();
         }
 
+        if (task.getState() == Task.TASK_RUNNING) {
+            vh.setStep(task.getTimeStart());
+            vh.start();
+        }
 
-        if (task.getState() == Task.TASK_RUNNING)
-            start(task, vh);
+        if (task.getState() == Task.TASK_PAUSED) {
+            vh.setStep(task.getTimePause());
+            vh.chronometer.setBase(SystemClock.elapsedRealtime() - vh.getStep());
+            vh.pause();
+        }
 
-        if (task.getState() == Task.TASK_PAUSED)
-            pause(task, vh);
+        if (task.getState() == Task.TASK_STOPPED) {
+            vh.setStep(task.getTimeFinish());
+            vh.chronometer.setBase(SystemClock.elapsedRealtime() - vh.getStep());
+            vh.stop();
+        }
 
-        if (task.getState() == Task.TASK_STOPPED)
-            stop(task, vh);
-
-
-        View.OnClickListener onClickListener1 = new View.OnClickListener() {
+        View.OnClickListener onClickActive = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!task.getActive()) {
-                    realm.beginTransaction();
-                    TaskModel taskModel = realm.where(TaskModel.class).findAll().get(position);
-                    taskModel.setTimeStart(System.currentTimeMillis()/1000);
-                    taskModel.setState(TaskModel.TASK_RUNNING);
-                    taskModel.setDuration(task.timer.getStep());
-                    realm.commitTransaction();
+                if (task.getState() == Task.TASK_PAUSED ||
+                        task.getState() == Task.TASK_STOPPED ||
+                        task.getState() == Task.TASK_CREATED) {
 
-                    start(task, vh);
+                    realm.beginTransaction();
+                    task.setTimeStart(System.currentTimeMillis());
+                    task.setState(Task.TASK_RUNNING);
+                    task.setDuration(vh.getStep());
+                    realm.commitTransaction();
+                    vh.start();
                     return;
                 }
 
-                if (task.getActive()) {
+                if (task.getState() == Task.TASK_RUNNING) {
                     realm.beginTransaction();
-                    TaskModel taskModel = realm.where(TaskModel.class).findAll().get(position);
-                    taskModel.setState(TaskModel.TASK_PAUSED);
-                    taskModel.setTimePause(task.timer.getStep());
+                    task.setState(Task.TASK_PAUSED);
+                    task.setTimePause(vh.getCurrentStep());
                     realm.commitTransaction();
-
-                    pause(task, vh);
+                    vh.pause();
                     return;
                 }
-
             }
         };
-        vh.ibActive.setOnClickListener(onClickListener1);
+        vh.ibActive.setOnClickListener(onClickActive);
 
-        View.OnClickListener onClickListener2 = new View.OnClickListener() {
+        View.OnClickListener onClickFinish = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 realm.beginTransaction();
-                TaskModel taskModel = realm.where(TaskModel.class).findAll().get(position);
-                taskModel.setState(TaskModel.TASK_STOPPED);
-                taskModel.setTimeFinish(task.timer.getStep());
+                if (task.getState() == Task.TASK_PAUSED)
+                    task.setTimeFinish(vh.getStep());
+                else
+                    task.setTimeFinish(vh.getCurrentStep());
+                task.setState(Task.TASK_STOPPED);
                 realm.commitTransaction();
-
-                stop(task, vh);
-                vh.ibFinish.setEnabled(false);
+                vh.stop();
             }
         };
-        vh.ibFinish.setOnClickListener(onClickListener2);
-
-        View.OnClickListener onClickListener3 = new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                task.stop();
-                tasks.remove(position);
-                realm.beginTransaction();
-                TaskModel taskModel = realm.where(TaskModel.class).findAll().get(position);
-                realm.where(TaskModel.class).findAll().get(position).deleteFromRealm(taskModel);
-                realm.commitTransaction();
-                //notifyItemRemoved(position);
-                //notifyDataSetChanged();
-            }
-        };
-        vh.ibRemove.setOnClickListener(onClickListener3);
-    }
-
-    private void start(Task task, ViewHolderTask vh)
-    {
-        task.pause();
-        task.start();
-        vh.ibFinish.setEnabled(true);
-        vh.ibActive.setImageResource(R.drawable.pause);
-        task.setActive(true);
-        vh.textTime.setTextColor(Color.parseColor("#FF16A085"));
-        vh.layout.setBackgroundColor(Color.parseColor("#3316A085"));
-        vh.ibFinish.setEnabled(true);
-    }
-
-    private void pause(Task task, ViewHolderTask vh)
-    {
-        task.pause();
-        vh.ibFinish.setEnabled(true);
-        vh.ibActive.setImageResource(R.drawable.start);
-        task.setActive(false);
-        vh.textTime.setTextColor(Color.GRAY);
-        vh.layout.setBackgroundColor(Color.parseColor("#33777777"));
-        vh.ibFinish.setEnabled(true);
-    }
-
-    private void stop(Task task, ViewHolderTask vh)
-    {
-        task.stop();
-        vh.ibActive.setImageResource(R.drawable.start);
-        task.setActive(false);
-        vh.textTime.setTextColor(Color.RED);
-        vh.layout.setBackgroundColor(Color.parseColor("#33FF8855"));
-        vh.ibFinish.setEnabled(false);
+        vh.ibFinish.setOnClickListener(onClickFinish);
     }
 
     @Override
-    public int getItemViewType(int position) {
-        return position;
+    public boolean onItemMove(int fromPosition, int toPosition) {
+        realm.beginTransaction();
+        Task taskModel1 = tasks.get(fromPosition);
+        Task taskModel2 = tasks.get(toPosition);
+        taskModel1.setPosition(toPosition);
+        taskModel2.setPosition(fromPosition);
+        realm.commitTransaction();
+        notifyItemMoved(fromPosition, toPosition);
+        return true;
     }
 
-
-    class ViewHolderTask extends RecyclerView.ViewHolder {
-        LinearLayout layout;
-        TextView textName;
-        TextView textDescription;
-        TextView textTime;
-        ImageButton ibActive;
-        ImageButton ibFinish;
-        ImageButton ibRemove;
-
-        public ViewHolderTask(View view) {
-            super(view);
-            layout = (LinearLayout) view.findViewById(R.id.linear);
-            textName = (TextView) view.findViewById(R.id.tvNameTask);
-            textDescription = (TextView) view.findViewById(R.id.tvDescriptionTask);
-            textTime = (TextView) view.findViewById(R.id.tvTimeTask);
-            ibActive = (ImageButton)view.findViewById(R.id.ibActive);
-            ibFinish = (ImageButton)view.findViewById(R.id.ibFinish);
-            ibFinish.setEnabled(false);
-            ibRemove = (ImageButton)view.findViewById(R.id.ibRemove);
-            ibRemove.setVisibility(View.INVISIBLE);
-            ibRemove.setEnabled(false);
+    @Override
+    public void onItemDismiss(int position) {
+        realm.beginTransaction();
+        realm.where(Task.class).equalTo("position", position).findFirst().deleteFromRealm();
+        for (int i = 0; i < tasks.size() - position; i++)
+        {
+            Task task = tasks.get(position + i);
+            task.setPosition(task.getPosition() - 1);
         }
+        realm.commitTransaction();
+        notifyItemRemoved(position);
+        notifyItemRangeChanged(position, tasks.size());
+    }
+
+    @Override
+    public void onItemDismiss(RecyclerView.ViewHolder viewHolder) {
+        final int position = viewHolder.getAdapterPosition();
+        final Task deletedTask = realm.copyFromRealm(tasks.get(position));
+        realm.beginTransaction();
+        realm.where(Task.class).equalTo("position", position).findFirst().deleteFromRealm();
+        for (int i = 0; i < tasks.size() - position; i++)
+        {
+            Task task = tasks.get(position + i);
+            task.setPosition(task.getPosition() - 1);
+        }
+        realm.commitTransaction();
+
+        notifyItemRemoved(position);
+        notifyItemRangeChanged(position, tasks.size());
+
+        Snackbar snackbar = Snackbar.make(viewHolder.itemView,
+                deletedTask.getName() + " is removed!", Snackbar.LENGTH_LONG);
+        snackbar.setAction("UNDO", new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                realm.beginTransaction();
+                for (int i = tasks.size(); i > position; i--)
+                {
+                    Task task = tasks.get(i - 1);
+                    task.setPosition(task.getPosition() + 1);
+                }
+                realm.copyToRealm(deletedTask);
+                realm.commitTransaction();
+                notifyItemInserted(position);
+                notifyItemRangeChanged(position, tasks.size());
+            }
+        });
+        snackbar.setActionTextColor(Color.YELLOW);
+        snackbar.show();
     }
 }
