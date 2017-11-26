@@ -9,9 +9,10 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        >
         <activity
-            android:name=".MainActivity"
+            android:name=".Task.TaskActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -20,6 +21,94 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
+        <activity
+            android:name=".TaskEditing.TaskEditingActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="orientation|keyboard|keyboardHidden"
+            android:windowSoftInputMode="stateHidden|stateVisible|adjustResize"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Tests.TaskTest1.TaskActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Tests.TaskTest1.TaskCreateActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="orientation|keyboard|keyboardHidden"
+            android:windowSoftInputMode="stateHidden|stateVisible|adjustResize"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Tests.TaskTest2.TaskActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Tests.TaskTest3.TaskActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Tests.TaskTest5.TaskActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Project.ProjectActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Project.ProjectCreateActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="orientation|keyboard|keyboardHidden"
+            android:windowSoftInputMode="stateHidden|stateVisible|adjustResize"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Project.ProjectEditActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="orientation|keyboard|keyboardHidden"
+            android:windowSoftInputMode="stateHidden|stateVisible|adjustResize"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Tests.WorkSpaceTest1.WorkspaceActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Workspace.WorkspaceActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".Workspace.WorkspaceEditActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="orientation|keyboard|keyboardHidden"
+            android:windowSoftInputMode="stateHidden|stateVisible|adjustResize"
+            android:label="@string/app_name">
+        </activity>
+
+        <activity
+            android:name=".ProjectInfo.ProjectInfoActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:label="@string/app_name">
+        </activity>
+
+    </application>
 </manifest>

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_1"
@@ -20,16 +19,8 @@
             android:icon="@drawable/report"
             android:title="@string/drawer_menu_reports" />
         <item
-            android:id="@+id/nav_5"
-            android:icon="@drawable/friends"
-            android:title="@string/drawer_menu_friends" />
-        <item
             android:id="@+id/nav_6"
             android:icon="@drawable/settings"
             android:title="@string/drawer_menu_settings" />
-        <item
-            android:id="@+id/nav_7"
-            android:title="..." />
     </group>
-
 </menu>

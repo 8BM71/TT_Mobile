@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/background_light"
-    tools:context="com.ponomarevigor.androidgames.mytimetracker.MainActivity">
+    tools:context=".Tests.TaskTest5.TaskActivity">
 
     <android.support.design.widget.AppBarLayout
         android:id="@+id/appBar"

@@ -15,4 +15,14 @@
     <string name="drawer_menu_reports">Reports</string>
     <string name="drawer_menu_friends">Friends</string>
     <string name="drawer_menu_settings">Settings</string>
+
+
+    <!--ProjectInfo-->
+    <string name="project_info_name">Name:</string>
+    <string name="project_info_description">Description:</string>
+    <string name="project_info_workspace">Workspace:</string>
+    <string name="project_info_tasks">Tasks:</string>
+    <string name="project_info_start">Start date:</string>
+    <string name="project_info_end">End date:</string>
+    <string name="project_info_duration">Duration:</string>
 </resources>

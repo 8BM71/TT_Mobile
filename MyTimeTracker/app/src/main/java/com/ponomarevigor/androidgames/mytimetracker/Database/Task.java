@@ -1,5 +1,6 @@
 package com.ponomarevigor.androidgames.mytimetracker.Database;
 
+import io.realm.RealmList;
 import io.realm.RealmObject;
 
 /**
@@ -7,6 +8,9 @@ import io.realm.RealmObject;
  */
 
 public class Task extends RealmObject {
+    public int id;
+    //public Project project;
+
     public String name;
     public String description;
 
@@ -22,8 +26,11 @@ public class Task extends RealmObject {
 
     public int state;
     public long duration;
-
     public int position;
+
+    public RealmList<StatisticsTask> statistics;
+
+    public Project project;
 
     public Task()
     {
@@ -106,5 +113,29 @@ public class Task extends RealmObject {
 
     public void setPosition(int position) {
         this.position = position;
+    }
+
+    public RealmList<StatisticsTask> getStatistics() {
+        return statistics;
+    }
+
+    public void setStatistics(RealmList<StatisticsTask> statistics) {
+        this.statistics = statistics;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    public void setProject(Project project) {
+        this.project = project;
     }
 }
