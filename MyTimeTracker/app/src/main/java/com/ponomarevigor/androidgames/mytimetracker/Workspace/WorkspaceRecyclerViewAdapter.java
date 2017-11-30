@@ -2,26 +2,21 @@ package com.ponomarevigor.androidgames.mytimetracker.Workspace;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.Toast;
 
 import com.ponomarevigor.androidgames.mytimetracker.Database.Project;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Workspace;
 import com.ponomarevigor.androidgames.mytimetracker.Project.ProjectActivity;
-import com.ponomarevigor.androidgames.mytimetracker.Project.ProjectEditActivity;
 import com.ponomarevigor.androidgames.mytimetracker.R;
-import com.ponomarevigor.androidgames.mytimetracker.Task.TaskActivity;
 
 import java.util.List;
 
 import io.realm.Realm;
-import io.realm.RealmList;
 import io.realm.RealmResults;
 
 /**
@@ -46,7 +41,7 @@ public class WorkspaceRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return new WorkspaceViewHolder(LayoutInflater.from(context).inflate(R.layout.item_workspace_recyclerview_2, parent, false));
+        return new WorkspaceViewHolder(LayoutInflater.from(context).inflate(R.layout.workspace_item_main, parent, false));
     }
 
     @Override
@@ -68,7 +63,6 @@ public class WorkspaceRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
         vh.layoutClickable.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //showActionDialog(workspace.getId());
                 if (!vh.isOpen) {
                     vh.isOpen = true;
                     vh.baseLayout.open(true);
@@ -101,20 +95,7 @@ public class WorkspaceRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
         vh.bDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-
                 if (workspaces.get(position).getId() != 1) {
-                    /*RealmList<Project> projects = realm.copyFromRealm(workspace).getProjects();
-                    realm.beginTransaction();
-                    Workspace defaultWorkspace = realm.where(Workspace.class).equalTo("id", 1).findFirst();
-                    for (int i = 0; i < projects.size(); i++)
-                        defaultWorkspace.getProjects().add(projects.get(i));
-                    realm.where(Workspace.class).findFirst().getProjects().deleteAllFromRealm();
-                    workspace.deleteFromRealm();
-
-                    realm.commitTransaction();
-                    notifyItemRemoved(position);
-                    notifyItemRangeChanged(position, workspaces.size());*/
                     realm.beginTransaction();
                     RealmResults<Project> results =
                             realm.where(Project.class).equalTo("workspace.id", workspace.getId()).findAll();
@@ -134,31 +115,5 @@ public class WorkspaceRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
                     Toast.makeText(context, "Default workspace can't be removed.", Toast.LENGTH_LONG).show();
             }
         });
-    }
-
-    public void showActionDialog(final int id) {
-        final View v = LayoutInflater.from(context).inflate(R.layout.dialog_project_action, null, false);
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        Button bGo = (Button) v.findViewById(R.id.bGoTask);
-        bGo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(context, TaskActivity.class);
-                intent.putExtra("projectID", id);
-                context.startActivity(intent);
-            }
-        });
-        Button bEdit = (Button) v.findViewById(R.id.bEditProject);
-        bEdit.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(context, ProjectEditActivity.class);
-                intent.putExtra("projectID", id);
-                context.startActivity(intent);
-            }
-        });
-        builder.setView(v);
-        AlertDialog alert = builder.create();
-        alert.show();
     }
 }

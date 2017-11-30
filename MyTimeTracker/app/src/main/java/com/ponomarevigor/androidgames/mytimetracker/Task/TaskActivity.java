@@ -4,7 +4,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -16,11 +15,9 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,6 +32,9 @@ import com.ponomarevigor.androidgames.mytimetracker.R;
 import com.ponomarevigor.androidgames.mytimetracker.Task.ItemTaskTouchHelper.ItemTaskTouchHelper;
 import com.ponomarevigor.androidgames.mytimetracker.Workspace.WorkspaceActivity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.realm.Realm;
 import io.realm.RealmResults;
 import io.realm.Sort;
@@ -48,20 +48,19 @@ public class TaskActivity extends AppCompatActivity
     RecyclerView recyclerView;
     TaskRecyclerViewAdapter taskAdapter;
     ItemTouchHelper touchHelper;
-    ImageButton ibAdd, ibEdit, ibDelete;
     TextView tvProject;
     Project project;
+    List<ModelTask> models;
 
     String[] projectsName;
-    int pos = 0;
     int[] projectsColor;
-
+    int pos = 0;
     int idProject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_task_main_1);
+        setContentView(R.layout.task_activity_main);
         /////////////////////////////////////////////////////
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -81,59 +80,41 @@ public class TaskActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        navigationView.setCheckedItem(R.id.nav_3);
-
-        ibAdd = (ImageButton)findViewById(R.id.ibAdd);
-        ibEdit = (ImageButton)findViewById(R.id.ibEdit);
-        ibDelete = (ImageButton)findViewById(R.id.ibDelete);
+        navigationView.setCheckedItem(R.id.nav_task);
         /////////////////////////////////////////////////////
-
-        idProject = getIntent().getIntExtra("projectID", -1);
 
         Realm.init(this);
         realm = Realm.getDefaultInstance();
-
-        //tasks = realm.where(Task.class).findAllSorted("position");
-        //tasks = realm.where(Task.class).findAllSorted("timeCreated", Sort.DESCENDING);
-        //initProject();
         projects = realm.where(Project.class).findAll().sort("id");
         if (projects.size() == 0) initProject();
-        //project = projects.get(0);
-        //tasks = project.getTasks().sort("timeCreated", Sort.DESCENDING);
+
+        idProject = getIntent().getIntExtra("projectID", -1);
         if (idProject == -1)
             tasks = realm.where(Task.class).findAllSorted("timeCreated", Sort.DESCENDING);
         else {
             project = realm.where(Project.class).equalTo("id", idProject).findFirst();
-            //tasks = project.getTasks().sort("timeCreated", Sort.DESCENDING);
             tasks = realm.where(Task.class).equalTo("project.id", project.getId())
                     .findAllSorted("timeCreated", Sort.DESCENDING);
         }
+
+        if (tasks.size() != 0)
+            models = setData(tasks);
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
-        taskAdapter = new TaskRecyclerViewAdapter(this, tasks,  project, realm);
+        taskAdapter = new TaskRecyclerViewAdapter(this, models, tasks, project, realm);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(taskAdapter);
-        recyclerView.setItemViewCacheSize(tasks.size());
         ItemTouchHelper.Callback callback = new ItemTaskTouchHelper(taskAdapter);
         touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(recyclerView);
-
-        projectsName = new String[projects.size() + 1 ];
-        projectsName[0] = "All tasks";
-        projectsColor = new int[projects.size() + 1 ];
-        projectsColor[0] = Color.WHITE;
+        if (models != null)
+            recyclerView.setItemViewCacheSize(models.size());
         createProjects(projects);
 
-
         tvProject = (TextView) findViewById(R.id.tvProject);
-        if (idProject == -1) {
-            Log.d("myLogTest", "1");
+        if (idProject == -1)
             tvProject.setText(projectsName[0]);
-        }
-        else {
-            Log.d("myLogTest", "2");
+        else
             tvProject.setText(project.getName());
-            Log.d("myLogTest", "2 + " + project.getName());
-        }
         tvProject.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -145,6 +126,11 @@ public class TaskActivity extends AppCompatActivity
 
     private void createProjects(RealmResults<Project> projects)
     {
+        projectsName = new String[projects.size() + 1];
+        projectsName[0] = "All tasks";
+        projectsColor = new int[projects.size() + 1];
+        projectsColor[0] = Color.WHITE;
+
         for (int i = 0; i < projects.size(); i++)
         {
             projectsName[i + 1] = projects.get(i).getName();
@@ -165,7 +151,6 @@ public class TaskActivity extends AppCompatActivity
         Project project = new Project();
         project.setName("No project");
         project.setDescription("No description");
-        project.setUserHost("you");
         project.setId(1);
         project.setColor(Color.LTGRAY);
         project.setWorkspace(realm.where(Workspace.class).findFirst());
@@ -177,18 +162,6 @@ public class TaskActivity extends AppCompatActivity
 
     private void showProjectDialog()
     {
-        /*AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select a project").setIcon(R.drawable.project);
-        builder.setItems(projectsName, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                loadTasks(i);
-            }
-        });
-        builder.setCancelable(true);
-        builder.create();
-        builder.show();*/
-
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select a project").setIcon(R.drawable.project);
         AdapterDialog adapter = new AdapterDialog(this, R.layout.dialog_project_row, projectsName, projectsColor);
@@ -215,20 +188,23 @@ public class TaskActivity extends AppCompatActivity
         else {
             project = projects.get(pos - 1);
             idProject = project.getId();
-            //tasks = project.getTasks().sort("timeCreated", Sort.DESCENDING);
             tasks = realm.where(Task.class).equalTo("project.id", project.getId())
                     .findAllSorted("timeCreated", Sort.DESCENDING);
         }
 
+        if (models != null)
+            models.clear();
+        models = setData(tasks);
         taskAdapter.setTasks(tasks);
         taskAdapter.setProject(project);
+        taskAdapter.setModels(models);
         recyclerView.setItemViewCacheSize(tasks.size());
         taskAdapter.notifyDataSetChanged();
     }
 
     private void createTask()
     {
-        final View v = (LinearLayout) getLayoutInflater().inflate(R.layout.dialog, null);
+        final View v = (LinearLayout) getLayoutInflater().inflate(R.layout.dialog_task_create, null);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("  Create new task!")
                 .setIcon(R.drawable.task)
@@ -238,22 +214,21 @@ public class TaskActivity extends AppCompatActivity
                             public void onClick(DialogInterface dialog, int id) {
                                 TextView tvName = (TextView) v.findViewById(R.id.tvNameTask);
                                 TextView tvDesc = (TextView) v.findViewById(R.id.tvDescriptionTask);
-
                                 String name = tvName.getText().toString();
                                 String description = tvDesc.getText().toString();
+
                                 if (name.isEmpty() && project == null)
                                     name = "Task: " + realm.where(Project.class).equalTo("id", 1).findFirst().getName();
                                 if (name.isEmpty())
                                     name = "Task: " + project.getName();
+
                                 realm.beginTransaction();
                                 Task taskModel = realm.createObject(Task.class);
-                                long createdTime = System.currentTimeMillis();
                                 taskModel.setName(name);
                                 taskModel.setDescription(description);
-                                taskModel.setTimeCreated(createdTime);
+                                taskModel.setTimeCreated(System.currentTimeMillis());
                                 taskModel.setState(Task.TASK_CREATED);
                                 taskModel.setDuration(0);
-
                                 taskModel.setId(realm.where(Task.class).max("id").intValue() + 1);
                                 if (project == null)
                                     taskModel.setProject(realm.where(Project.class).equalTo("id", 1).findFirst());
@@ -261,19 +236,17 @@ public class TaskActivity extends AppCompatActivity
                                     taskModel.setProject(realm.where(Project.class).equalTo("id", project.getId()).findFirst());
                                 realm.commitTransaction();
 
-                                recyclerView.setItemViewCacheSize(tasks.size());
+                                if (models != null)
+                                    models.clear();
+                                models = setData(tasks);
+                                recyclerView.setItemViewCacheSize(models.size());
+                                taskAdapter.setModels(models);
                                 taskAdapter.notifyDataSetChanged();
                             }
                         });
         builder.setView(v);
         AlertDialog alert = builder.create();
         alert.show();
-    }
-
-    @Override
-    public void onStop()
-    {
-        super.onStop();
     }
 
     @Override
@@ -288,14 +261,12 @@ public class TaskActivity extends AppCompatActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.task_1, menu);
+        getMenuInflater().inflate(R.menu.task, menu);
         return true;
-        //return false;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-
         int id = item.getItemId();
 
         if (id == R.id.actionCreate) {
@@ -317,42 +288,7 @@ public class TaskActivity extends AppCompatActivity
             return true;
         }
 
- /*       if (id == R.id.actionDelete) {
- //НЕ РАБОТАЕТ, вылетает, потом разобраться.
-            showDeleteDialog();
-            return true;
-        }*/
-
         return super.onOptionsItemSelected(item);
-    }
-
-    private void showDeleteDialog()
-    {
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        String title = "Delete " + project.getName() + "?";
-        builder.setTitle(title)
-                .setCancelable(true)
-                .setNegativeButton("No",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                dialog.dismiss();
-                            }
-                        })
-                .setPositiveButton("Yes",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                realm.beginTransaction();
-                                project.deleteFromRealm();
-                                tasks.deleteAllFromRealm();
-                                realm.commitTransaction();
-                                projects = realm.where(Project.class).findAll().sort("id");
-                                createProjects(projects);
-                                loadTasks(0);
-                                dialog.dismiss();
-                            }
-                        });
-        AlertDialog alert = builder.create();
-        alert.show();
     }
 
     @Override
@@ -364,40 +300,77 @@ public class TaskActivity extends AppCompatActivity
         super.onResume();
     }
 
-    private void clearAllTask()
-    {
-        realm.beginTransaction();
-        realm.where(Task.class).findAll().deleteAllFromRealm();
-        realm.commitTransaction();
-
-        Intent intent = getIntent();
-        finish();
-        startActivity(intent);
-    }
-
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        int id = item.getItemId();
+        final int id = item.getItemId();
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+
+        drawer.addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+            }
+
+            @Override
+            public void onDrawerOpened(View drawerView) {
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                    loadActivity(id);
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+            }
+        });
+
         drawer.closeDrawer(GravityCompat.START);
-
-        if (id == R.id.nav_1) {
-            Intent intent = new Intent(this, WorkspaceActivity.class);
-            startActivity(intent);
-            return true;
-        }
-
-        if (id == R.id.nav_2) {
-            Intent intent = new Intent(this, ProjectActivity.class);
-            startActivity(intent);
-            return true;
-        }
-
-        if (id == R.id.nav_3) {
-            return true;
-        }
-
         return true;
+    }
+
+    private void loadActivity(int id)
+    {
+        Intent intent = null;
+        if (id == R.id.nav_task)
+            return;
+
+        if (id == R.id.nav_workspace)
+            intent = new Intent(this, WorkspaceActivity.class);
+
+        if (id == R.id.nav_project)
+            intent = new Intent(this, ProjectActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+        startActivity(intent);
+        //overridePendingTransition(0,0);
+    }
+
+    public static List<ModelTask> setData(List<Task> tasks)
+    {
+        long day = 3600000; //Пока час для тестирования
+        List<ModelTask> models = new ArrayList<ModelTask>();
+        Task task;
+        if (tasks.size() != 0)
+            task = tasks.get(0);
+        else
+            return null;
+
+        long time = task.getTimeCreated() / day;
+        models.add(new ModelTask(time));
+        //models.add(new ModelTask(task));
+
+        for (Task t : tasks)
+        {
+            long d = t.getTimeCreated() / day;
+            if (d != time)
+            {
+                time = d;
+                models.add(new ModelTask(time));
+                models.add(new ModelTask(t));
+            }
+            else
+                models.add(new ModelTask(t));
+        }
+        return models;
     }
 }

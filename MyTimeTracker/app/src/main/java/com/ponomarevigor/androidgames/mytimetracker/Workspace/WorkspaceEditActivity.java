@@ -1,6 +1,5 @@
 package com.ponomarevigor.androidgames.mytimetracker.Workspace;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -11,7 +10,6 @@ import android.widget.TextView;
 
 import com.ponomarevigor.androidgames.mytimetracker.Database.Workspace;
 import com.ponomarevigor.androidgames.mytimetracker.R;
-import com.ponomarevigor.androidgames.mytimetracker.Workspace.WorkspaceActivity;
 
 import io.realm.Realm;
 
@@ -27,7 +25,7 @@ public class WorkspaceEditActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_workspace_editing);
+        setContentView(R.layout.workspace_activity_edit);
 
         Realm.init(this);
         realm = Realm.getDefaultInstance();

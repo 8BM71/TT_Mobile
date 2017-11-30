@@ -22,7 +22,6 @@ public class MainApplication extends Application {
                 Project project = new Project();
                 project.setName("NoProject");
                 project.setDescription("NoDescription");
-                project.setUserHost("you");
                 project.setId(1);
                 realm.beginTransaction();
                 realm.copyToRealm(project);

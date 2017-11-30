@@ -1,13 +1,10 @@
 package com.ponomarevigor.androidgames.mytimetracker.Project;
 
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -40,23 +37,20 @@ public class ProjectEditActivity extends AppCompatActivity implements ColorPicke
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_project_editing);
+        setContentView(R.layout.project_activity_edit);
 
         Realm.init(this);
         realm = Realm.getDefaultInstance();
 
         int id = getIntent().getIntExtra("projectID", 0);
         project = realm.where(Project.class).equalTo("id", id).findFirst();
-        //int idWorkspace = getIntent().getIntExtra("workspaceID", 1);
         workspace = project.getWorkspace();
         if (workspace == null)
             workspace = realm.where(Workspace.class).equalTo("id", 1).findFirst();
         workspaces = realm.where(Workspace.class).findAll().sort("id");
         workspacesName = new String[workspaces.size()];
         for (int i = 0; i < workspaces.size(); i++)
-        {
             workspacesName[i] = workspaces.get(i).getName();
-        }
 
         etName = (EditText) findViewById(R.id.etName);
         etName.setText(project.getName());

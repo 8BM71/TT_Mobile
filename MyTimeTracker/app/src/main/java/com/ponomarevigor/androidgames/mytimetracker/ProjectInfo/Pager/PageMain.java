@@ -1,26 +1,19 @@
 package com.ponomarevigor.androidgames.mytimetracker.ProjectInfo.Pager;
 
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.support.v4.app.Fragment;
-import android.text.SpannableString;
-import android.text.style.UnderlineSpan;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.ponomarevigor.androidgames.mytimetracker.Database.Project;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Task;
 import com.ponomarevigor.androidgames.mytimetracker.R;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -31,6 +24,7 @@ import io.realm.Sort;
  */
 
 public class PageMain extends Fragment {
+    LinearLayout layout;
     TextView etName, etDescription, etWorkspace;
     TextView tvNumber;
     TextView tvStart, tvEnd;
@@ -53,7 +47,7 @@ public class PageMain extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.project_page_main, container, false);
+        View view = inflater.inflate(R.layout.project_page_info, container, false);
 
         Realm.init(this.getContext());
         realm = Realm.getDefaultInstance();
@@ -62,15 +56,25 @@ public class PageMain extends Fragment {
         tasks = realm.where(Task.class).equalTo("project.id", project.getId())
                 .findAllSorted("timeCreated", Sort.DESCENDING);
 
+        layout = (LinearLayout) view.findViewById(R.id.layoutDescription);
         etName = (TextView) view.findViewById(R.id.etName);
         etWorkspace = (TextView) view.findViewById(R.id.etWorkspace);
         etDescription = (TextView) view.findViewById(R.id.etDescription);
-        tvNumber = (TextView)view.findViewById(R.id.tvNumber);
-        tvStart = (TextView)view.findViewById(R.id.tvStart);
-        tvEnd = (TextView)view.findViewById(R.id.tvEnd);
+        tvNumber = (TextView) view.findViewById(R.id.tvNumber);
+        tvStart = (TextView) view.findViewById(R.id.tvStart);
+        tvEnd = (TextView) view.findViewById(R.id.tvEnd);
 
         etName.setText(project.getName());
-        etDescription.setText(project.getDescription());
+        
+        String description = project.getDescription();
+        if (!description.isEmpty()) {
+            layout.setVisibility(View.VISIBLE);
+            etDescription.setText(project.getDescription());
+
+        } else
+            layout.setVisibility(View.GONE);
+
+
         etWorkspace.setText(project.getWorkspace().getName());
         tvNumber.setText(Integer.toString(realm.where(Task.class).equalTo("project.id", idProject).findAll().size()));
 
@@ -80,12 +84,11 @@ public class PageMain extends Fragment {
         if (tasks.size() != 0) {
             long date = Math.max(
                     Math.max(tasks.where().max("timeCreated").longValue(), tasks.where().max("timeStart").longValue()),
-                    Math.max(tasks.where().max("timePause").longValue(), tasks.where().max("timeFinish").longValue())
+                    tasks.where().max("timeFinish").longValue()
             );
             String endDate = new SimpleDateFormat("dd MMMM yyyy").format(new Date(date));
             tvEnd.setText(endDate);
-        }
-        else
+        } else
             tvEnd.setText(startDate);
         return view;
     }

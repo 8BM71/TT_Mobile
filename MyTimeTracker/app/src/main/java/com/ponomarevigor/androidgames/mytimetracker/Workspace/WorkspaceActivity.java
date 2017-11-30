@@ -38,13 +38,11 @@ public class WorkspaceActivity extends AppCompatActivity
     RealmResults<Workspace> workspaces;
     RecyclerView recyclerView;
     WorkspaceRecyclerViewAdapter workspaceAdapter;
-    TextView tvWorkspace;
-    Workspace workspace;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_workspace_main_1);
+        setContentView(R.layout.workspace_activity_main);
         context = this.getBaseContext();
         /////////////////////////////////////////////////////
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -65,7 +63,7 @@ public class WorkspaceActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        navigationView.setCheckedItem(R.id.nav_1);
+        navigationView.setCheckedItem(R.id.nav_workspace);
         /////////////////////////////////////////////////////
 
         Realm.init(this);
@@ -81,7 +79,7 @@ public class WorkspaceActivity extends AppCompatActivity
 
     private void createWorkspace() {
 
-        final View v = (LinearLayout) getLayoutInflater().inflate(R.layout.dialog_workspace, null);
+        final View v = (LinearLayout) getLayoutInflater().inflate(R.layout.dialog_workspace_create, null);
         final TextView tvName = (TextView) v.findViewById(R.id.tvName);
         final TextView tvDesc = (TextView) v.findViewById(R.id.tvDescription);
 
@@ -151,23 +149,12 @@ public class WorkspaceActivity extends AppCompatActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        //getMenuInflater().inflate(R.menu.main, menu);
-        //return true;
         return false;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        if (id == R.id.action_clear) {
-            return true;
-        }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -180,27 +167,45 @@ public class WorkspaceActivity extends AppCompatActivity
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        int id = item.getItemId();
+        final int id = item.getItemId();
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+
+        drawer.addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+            }
+
+            @Override
+            public void onDrawerOpened(View drawerView) {
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                loadActivity(id);
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+            }
+        });
+
         drawer.closeDrawer(GravityCompat.START);
-
-        if (id == R.id.nav_1) {
-            return true;
-        }
-
-        if (id == R.id.nav_2) {
-            Intent intent = new Intent(this, ProjectActivity.class);
-            startActivity(intent);
-            return true;
-        }
-
-        if (id == R.id.nav_3) {
-            Intent intent = new Intent(this, TaskActivity.class);
-            //intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-            startActivity(intent);
-            return true;
-        }
-
         return true;
+    }
+
+    private void loadActivity(int id)
+    {
+        Intent intent = null;
+        if (id == R.id.nav_workspace)
+            return;
+
+        if (id == R.id.nav_project)
+            intent = new Intent(this, ProjectActivity.class);
+
+        if (id == R.id.nav_task)
+            intent = new Intent(this, TaskActivity.class);
+
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+        startActivity(intent);
     }
 }

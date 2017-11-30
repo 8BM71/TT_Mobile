@@ -32,7 +32,8 @@ public class ItemTaskTouchHelper extends ItemTouchHelper.Callback {
 
     @Override
     public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-        adapter.onItemDismiss(viewHolder);
+        if (viewHolder.getItemViewType() == 1)
+            adapter.onItemDismiss(viewHolder);
     }
 
     @Override
@@ -47,29 +48,35 @@ public class ItemTaskTouchHelper extends ItemTouchHelper.Callback {
 
     @Override
     public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-        if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
-            View view = ((TaskViewHolder) viewHolder).frontLayout;
-            getDefaultUIUtil().onDraw(c, recyclerView, view, dX, dY, actionState, isCurrentlyActive);
-        } else
-            super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+        if (viewHolder.getItemViewType() == 1) {
+            if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                View view = ((TaskViewHolder) viewHolder).frontLayout;
+                getDefaultUIUtil().onDraw(c, recyclerView, view, dX, dY, actionState, isCurrentlyActive);
+            } else
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+        }
     }
 
 
     @Override
     public void onChildDrawOver(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-        if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
-            View view = ((TaskViewHolder) viewHolder).frontLayout;
-            getDefaultUIUtil().onDraw(c, recyclerView, view, dX, dY, actionState, isCurrentlyActive);
-        } else
-            super.onChildDrawOver(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+        if (viewHolder.getItemViewType() == 1) {
+            if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                View view = ((TaskViewHolder) viewHolder).frontLayout;
+                getDefaultUIUtil().onDraw(c, recyclerView, view, dX, dY, actionState, isCurrentlyActive);
+            } else
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+        }
     }
 
 
     @Override
     public void clearView(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
-        View view1 = ((TaskViewHolder) viewHolder).baseLayout;
-        View view2 = ((TaskViewHolder) viewHolder).frontLayout;
-        getDefaultUIUtil().clearView(view1);
-        getDefaultUIUtil().clearView(view2);
+        if (viewHolder.getItemViewType() == 1) {
+            View view1 = ((TaskViewHolder) viewHolder).baseLayout;
+            View view2 = ((TaskViewHolder) viewHolder).frontLayout;
+            getDefaultUIUtil().clearView(view1);
+            getDefaultUIUtil().clearView(view2);
+        }
     }
 }

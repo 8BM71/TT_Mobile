@@ -50,7 +50,7 @@ public class PageStatistics extends Fragment  {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.task_page_statistics, container, false);
+        View view = inflater.inflate(R.layout.project_page_stat, container, false);
 
         Realm.init(this.getContext());
         realm = Realm.getDefaultInstance();
@@ -60,23 +60,14 @@ public class PageStatistics extends Fragment  {
         tasks = realm.where(Task.class).equalTo("project.id", project.getId())
                 .findAllSorted("timeCreated", Sort.DESCENDING);
 
-        stats = new RealmList<StatisticsTask>();
         models = new ArrayList<ModelTaskStat>();
-        for (int i = 0; i < tasks.size(); i++)
+        for (Task task : tasks)
         {
-            stats.addAll(tasks.get(i).getStatistics());
-            List<StatisticsTask> taskStats = tasks.get(i).getStatistics();
+            List<StatisticsTask> stats = task.getStatistics();
+            models.add(new ModelTaskStat(task));
 
-            ModelTaskStat m1 = new ModelTaskStat();
-            m1.setTask(tasks.get(i));
-            models.add(m1);
-
-            for (int j = 0; j < taskStats.size(); j++)
-            {
-                ModelTaskStat m2 = new ModelTaskStat();
-                m2.setStat(taskStats.get(j));
-                models.add(m2);
-            }
+            for (StatisticsTask stat: stats)
+                models.add(new ModelTaskStat(stat));
         }
 
         recyclerView = (RecyclerView)view.findViewById(R.id.recyclerView);

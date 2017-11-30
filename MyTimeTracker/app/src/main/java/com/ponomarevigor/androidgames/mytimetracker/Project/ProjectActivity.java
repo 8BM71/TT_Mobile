@@ -2,7 +2,6 @@ package com.ponomarevigor.androidgames.mytimetracker.Project;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
@@ -14,7 +13,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,17 +23,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ponomarevigor.androidgames.mytimetracker.Database.Project;
-import com.ponomarevigor.androidgames.mytimetracker.Database.Task;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Workspace;
 import com.ponomarevigor.androidgames.mytimetracker.R;
-import com.ponomarevigor.androidgames.mytimetracker.Task.AdapterDialog;
 import com.ponomarevigor.androidgames.mytimetracker.Task.TaskActivity;
 import com.ponomarevigor.androidgames.mytimetracker.Workspace.WorkspaceActivity;
 import com.ponomarevigor.androidgames.mytimetracker.Workspace.WorkspaceEditActivity;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
-import io.realm.Sort;
 
 public class ProjectActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -55,7 +50,7 @@ public class ProjectActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_project_main_1);
+        setContentView(R.layout.project_activity_main);
         /////////////////////////////////////////////////////
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -75,20 +70,16 @@ public class ProjectActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        navigationView.setCheckedItem(R.id.nav_2);
+        navigationView.setCheckedItem(R.id.nav_project);
         /////////////////////////////////////////////////////
-
-        idWorkspace = getIntent().getIntExtra("workspaceID", -1);
-
-
         Realm.init(this);
         realm = Realm.getDefaultInstance();
         workspaces = realm.where(Workspace.class).findAll().sort("id");
+        idWorkspace = getIntent().getIntExtra("workspaceID", -1);
         if (idWorkspace == -1)
             projects = realm.where(Project.class).findAll().sort("id");
         else {
             workspace = realm.where(Workspace.class).equalTo("id", idWorkspace).findFirst();
-            //projects = workspace.getProjects().sort("id");
             projects = realm.where(Project.class).equalTo("workspace.id", workspace.getId()).findAll();
         }
 
@@ -98,9 +89,7 @@ public class ProjectActivity extends AppCompatActivity
         recyclerView.setAdapter(projectAdapter);
         recyclerView.setItemViewCacheSize(projects.size());
 
-        workspacesName = new String[workspaces.size() + 1];
         createWorkspaces(workspaces);
-
 
         tvWorkspace = (TextView) findViewById(R.id.tvWorkspace);
         if (idWorkspace == -1)
@@ -118,6 +107,7 @@ public class ProjectActivity extends AppCompatActivity
 
     private void createWorkspaces(RealmResults<Workspace> workspaces)
     {
+        workspacesName = new String[workspaces.size() + 1];
         workspacesName[0] = "All projects";
         for (int i = 0; i < workspaces.size(); i++)
         {
@@ -162,7 +152,6 @@ public class ProjectActivity extends AppCompatActivity
         else {
             workspace = workspaces.get(pos - 1);
             idWorkspace = workspace.getId();
-            //projects = workspace.getProjects().sort("id");
             projects = realm.where(Project.class).equalTo("workspace.id", workspace.getId()).findAll();
         }
 
@@ -170,12 +159,6 @@ public class ProjectActivity extends AppCompatActivity
         projectAdapter.setWorkspace(workspace);
         recyclerView.setItemViewCacheSize(projects.size());
         projectAdapter.notifyDataSetChanged();
-    }
-
-    @Override
-    public void onStop()
-    {
-        super.onStop();
     }
 
     @Override
@@ -192,7 +175,6 @@ public class ProjectActivity extends AppCompatActivity
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.project, menu);
         return true;
-        //return false;
     }
 
     @Override
@@ -222,7 +204,7 @@ public class ProjectActivity extends AppCompatActivity
 
     private void createWorkspace() {
 
-        final View v = (LinearLayout) getLayoutInflater().inflate(R.layout.dialog_workspace, null);
+        final View v = (LinearLayout) getLayoutInflater().inflate(R.layout.dialog_workspace_create, null);
         final TextView tvName = (TextView) v.findViewById(R.id.tvName);
         final TextView tvDesc = (TextView) v.findViewById(R.id.tvDescription);
 
@@ -281,7 +263,7 @@ public class ProjectActivity extends AppCompatActivity
     protected void onResume() {
         createWorkspaces(realm.where(Workspace.class).findAll().sort("id"));
         if (pos != 0)
-        tvWorkspace.setText(workspacesName[pos]);
+            tvWorkspace.setText(workspacesName[pos]);
         projectAdapter.notifyDataSetChanged();
         super.onResume();
     }
@@ -289,24 +271,45 @@ public class ProjectActivity extends AppCompatActivity
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        int id = item.getItemId();
+        final int id = item.getItemId();
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+
+        drawer.addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+            }
+
+            @Override
+            public void onDrawerOpened(View drawerView) {
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                loadActivity(id);
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+            }
+        });
+
         drawer.closeDrawer(GravityCompat.START);
-
-        if (id == R.id.nav_1) {
-            Intent intent = new Intent(this, WorkspaceActivity.class);
-            startActivity(intent);
-        }
-
-        if (id == R.id.nav_2) {
-            return true;
-        }
-
-        if (id == R.id.nav_3) {
-            Intent intent = new Intent(this, TaskActivity.class);
-            startActivity(intent);
-            return true;
-        }
         return true;
+    }
+
+    private void loadActivity(int id)
+    {
+        Intent intent = null;
+        if (id == R.id.nav_project)
+            return;
+
+        if (id == R.id.nav_workspace)
+            intent = new Intent(this, WorkspaceActivity.class);
+
+        if (id == R.id.nav_task)
+            intent = new Intent(this, TaskActivity.class);
+
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+        startActivity(intent);
     }
 }

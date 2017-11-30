@@ -9,27 +9,22 @@ import io.realm.RealmObject;
 
 public class Task extends RealmObject {
     public int id;
-    //public Project project;
 
     public String name;
     public String description;
 
     public long timeCreated;
     public long timeStart;
-    public long timePause;
     public long timeFinish;
 
     public static final int TASK_CREATED = 0;
     public static final int TASK_RUNNING = 1;
-    public static final int TASK_PAUSED = 2;
-    public static final int TASK_STOPPED = 3;
+    public static final int TASK_STOPPED = 2;
 
     public int state;
     public long duration;
-    public int position;
 
     public RealmList<StatisticsTask> statistics;
-
     public Project project;
 
     public Task()
@@ -83,14 +78,6 @@ public class Task extends RealmObject {
         this.timeStart = timeStart;
     }
 
-    public long getTimePause() {
-        return timePause;
-    }
-
-    public void setTimePause(long timePause) {
-        this.timePause = timePause;
-    }
-
     public long getTimeFinish() {
         return timeFinish;
     }
@@ -105,14 +92,6 @@ public class Task extends RealmObject {
 
     public void setDuration(long duration) {
         this.duration = duration;
-    }
-
-    public int getPosition() {
-        return position;
-    }
-
-    public void setPosition(int position) {
-        this.position = position;
     }
 
     public RealmList<StatisticsTask> getStatistics() {

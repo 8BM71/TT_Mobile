@@ -6,7 +6,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 import com.ponomarevigor.androidgames.mytimetracker.Database.Project;
@@ -28,7 +27,7 @@ public class ProjectInfoActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_project_info);
+        setContentView(R.layout.project_activity_info);
 
         Realm.init(this);
         realm = Realm.getDefaultInstance();

@@ -5,20 +5,13 @@
         android:id="@+id/actionCreate"
         android:orderInCategory="100"
         android:title="Create new project"
-        android:icon="@drawable/ic_add"
+        android:icon="@drawable/ic_add_white"
         app:showAsAction="always" />
 
     <item
         android:id="@+id/actionEdit"
         android:orderInCategory="100"
         android:title="Edit a project"
-        android:icon="@drawable/ic_edit"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/actionDelete"
-        android:orderInCategory="100"
-        android:title="Delete project"
-        android:icon="@drawable/ic_delete"
-        app:showAsAction="never" />
+        android:icon="@drawable/ic_edit_white"
+        app:showAsAction="always" />
 </menu>

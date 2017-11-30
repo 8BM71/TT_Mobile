@@ -1,33 +1,19 @@
 package com.ponomarevigor.androidgames.mytimetracker.ProjectInfo.Pager;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.support.v7.widget.RecyclerView;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
-import android.widget.DatePicker;
-import android.widget.NumberPicker;
-import android.widget.TextView;
-import android.widget.TimePicker;
 
 import com.ponomarevigor.androidgames.mytimetracker.Database.StatisticsTask;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Task;
 import com.ponomarevigor.androidgames.mytimetracker.R;
 
-import java.util.Calendar;
 import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmList;
-import io.realm.RealmResults;
 
 
 /**
@@ -41,7 +27,6 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
     List<Task> tasks;
     RealmList<StatisticsTask> stats;
     Realm realm;
-    Task task = null;
     int types[];
 
     public RecyclerAdapterStatistics(Context context, List<Task> tasks, RealmList<StatisticsTask> stats, List<ModelTaskStat> models,
@@ -70,10 +55,10 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == 0)
             return new TaskNameViewHolder(LayoutInflater.from(context).inflate(
-                    R.layout.item_project_statistics_name, parent, false), context);
+                    R.layout.project_item_stat_name, parent, false), context);
         else
             return new TaskStatViewHolder(LayoutInflater.from(context).inflate(
-                    R.layout.item_project_statistics, parent, false), context);
+                    R.layout.project_item_stat, parent, false), context);
     }
 
     @Override

@@ -25,7 +25,6 @@ public class TaskViewHolder extends RecyclerView.ViewHolder{
     public TextView textDescription;
     public Chronometer chronometer;
     public ImageButton ibActive;
-    public ImageButton ibFinish;
     long step = 0;
 
     public TaskViewHolder(View view) {
@@ -38,61 +37,22 @@ public class TaskViewHolder extends RecyclerView.ViewHolder{
         textDescription = (TextView) view.findViewById(R.id.tvDescriptionTask);
         chronometer = (Chronometer) view.findViewById(R.id.tvTimeTask);
         ibActive = (ImageButton) view.findViewById(R.id.ibActive);
-        ibFinish = (ImageButton) view.findViewById(R.id.ibFinish);
-        ibFinish.setEnabled(false);
-        //ibFinish.setAlpha(0.0f);
-        /* chronometer.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
-            @Override
-            public void onChronometerTick(Chronometer chronometer) {
-                long elapsedMillis = SystemClock.elapsedRealtime() - chronometer.getBase();
-                chronometer.setText(getTime(elapsedMillis/1000)); //можно без деления, но тогда исправить код
-            }
-        });*/
-    }
-
-    private String getTime(long step) {
-        String time;
-        int days = (int) step / 86400;
-        int hours = (int) (step % (86400)) / 3600;
-        int minutes = (int) (step % 3600) / 60;
-        int seconds = (int) (step % 60);
-        if (days == 0)
-            time = String.format("%02d:%02d:%02d", hours, minutes, seconds);
-        else
-            time = String.format("%dd. %02d:%02d:%02d", days, hours, minutes, seconds);
-        return time;
     }
 
     public void create() {
         ibActive.setImageResource(R.drawable.ic_play);
-        ibActive.setEnabled(true);
-        ibFinish.setEnabled(false);
-        //ibFinish.setAlpha(0.0f);
         frontLayout.setBackgroundColor(Color.WHITE);
-        //imageIndicator.setBackgroundColor(Color.WHITE);
         step = 0;
         chronometer.setBase(SystemClock.elapsedRealtime());
         chronometer.stop();
         chronometer.setTextColor(Color.DKGRAY);
-
     }
 
     public void start() {
-        ibActive.setImageResource(R.drawable.ic_pause);
+        ibActive.setImageResource(R.drawable.ic_stop);
         chronometer.setBase(SystemClock.elapsedRealtime() - step);
         chronometer.start();
         chronometer.setTextColor(Color.parseColor("#1ABC9C"));
-        //imageIndicator.setBackgroundColor(Color.parseColor("#1ABC9C"));
-        ibFinish.setEnabled(true);
-    }
-
-    public void pause() {
-        ibActive.setImageResource(R.drawable.ic_play);
-        chronometer.stop();
-        step = getCurrentStep();
-        chronometer.setTextColor(Color.GRAY);
-        //imageIndicator.setBackgroundColor(Color.LTGRAY);
-        ibFinish.setEnabled(true);
     }
 
     public void stop() {
@@ -100,10 +60,6 @@ public class TaskViewHolder extends RecyclerView.ViewHolder{
         chronometer.stop();
         step = 0;
         chronometer.setTextColor(Color.RED);
-        //imageIndicator.setBackgroundColor(Color.parseColor("#99FF0000"));
-        ibFinish.setEnabled(false);
-        //ibFinish.setAlpha(0.0f);
-
     }
 
     public long getCurrentStep() {

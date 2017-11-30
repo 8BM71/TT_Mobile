@@ -1,7 +1,6 @@
 package com.ponomarevigor.androidgames.mytimetracker.Project;
 
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
@@ -16,7 +15,6 @@ import com.jaredrummler.android.colorpicker.ColorPickerView;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Project;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Workspace;
 import com.ponomarevigor.androidgames.mytimetracker.R;
-import com.ponomarevigor.androidgames.mytimetracker.Tests.TaskTest1.AdapterDialog;
 
 import java.util.List;
 
@@ -39,7 +37,7 @@ public class ProjectCreateActivity extends AppCompatActivity implements ColorPic
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_project_creating);
+        setContentView(R.layout.project_activity_create);
 
         Realm.init(this);
         realm = Realm.getDefaultInstance();
@@ -48,9 +46,7 @@ public class ProjectCreateActivity extends AppCompatActivity implements ColorPic
         workspaces = realm.where(Workspace.class).findAll().sort("id");
         workspacesName = new String[workspaces.size()];
         for (int i = 0; i < workspaces.size(); i++)
-        {
             workspacesName[i] = workspaces.get(i).getName();
-        }
 
         etName = (EditText) findViewById(R.id.etName);
         etDescription = (EditText) findViewById(R.id.etDescription);
@@ -124,7 +120,6 @@ public class ProjectCreateActivity extends AppCompatActivity implements ColorPic
         project.setStart(System.currentTimeMillis());
         realm.beginTransaction();
         realm.copyToRealm(project);
-        //workspace.getProjects().add(project);
         realm.commitTransaction();
     }
 

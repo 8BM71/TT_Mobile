@@ -14,22 +14,23 @@ public class Project extends RealmObject {
 
     public String name;
     public String description;
-    public RealmList<Task> tasks;
-
-    public String userHost;
 
     public long duration;
     public long start;
     public long end;
 
     public int color;
-
-/*    @LinkingObjects("projects")
-    public final RealmResults<Workspace> workspaces = null;*/
-
     public Workspace workspace;
 
     public Project() {
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -46,14 +47,6 @@ public class Project extends RealmObject {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public RealmList<Task> getTasks() {
-        return tasks;
-    }
-
-    public void setTasks(RealmList<Task> tasks) {
-        this.tasks = tasks;
     }
 
     public long getDuration() {
@@ -78,22 +71,6 @@ public class Project extends RealmObject {
 
     public void setEnd(long end) {
         this.end = end;
-    }
-
-    public String getUserHost() {
-        return userHost;
-    }
-
-    public void setUserHost(String userHost) {
-        this.userHost = userHost;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public int getColor() {

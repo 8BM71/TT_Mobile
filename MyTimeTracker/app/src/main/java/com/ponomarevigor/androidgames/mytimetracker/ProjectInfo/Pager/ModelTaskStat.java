@@ -17,6 +17,18 @@ public class ModelTaskStat {
         stat = null;
     }
 
+    public ModelTaskStat(Task task)
+    {
+        this.task =task;
+        stat = null;
+    }
+
+    public ModelTaskStat(StatisticsTask stat)
+    {
+        task = null;
+        this.stat = stat;
+    }
+
     public Task getTask() {
         return task;
     }
