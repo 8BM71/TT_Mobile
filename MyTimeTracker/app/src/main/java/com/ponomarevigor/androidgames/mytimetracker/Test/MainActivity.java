@@ -1,6 +1,9 @@
 package com.ponomarevigor.androidgames.mytimetracker.Test;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.design.widget.NavigationView;
@@ -9,30 +12,73 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.ponomarevigor.androidgames.mytimetracker.Database.User;
 import com.ponomarevigor.androidgames.mytimetracker.R;
+import com.ponomarevigor.androidgames.mytimetracker.User.UserActivity;
+
+import io.realm.Realm;
+import jp.wasabeef.glide.transformations.CropCircleTransformation;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+    GoogleSignInAccount account;
+    GoogleSignInClient mGoogleSignInClient;
+    GoogleSignInOptions gso;
+    Realm realm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.xxx_activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
-        toggle.syncState();
-
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        View header = navigationView.getHeaderView(0);
+        TextView tvName = (TextView)header.findViewById(R.id.tvName);
+        TextView tvEmail = (TextView)header.findViewById(R.id.tvMail);
+        ImageView photo = (ImageView)header.findViewById(R.id.imagePhoto);
+        Realm.init(this);
+        realm = Realm.getDefaultInstance();
+        account = GoogleSignIn.getLastSignedInAccount(this);
+        User user = realm.where(User.class).equalTo("id", 0).findFirst();
+        //Log.d("myLog", "idToken" + user.getIdToken());
+        //tvName.setText(account.getDisplayName());
+        //tvEmail.setText(account.getEmail());
+        tvName.setText(user.getName());
+        tvEmail.setText(user.getEmail());
+        Glide.with(this)
+                .load(Uri.parse(user.getPhoto()))
+                //.load(account.getPhotoUrl())
+                .asBitmap()
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .skipMemoryCache(false)
+                .transform(new CropCircleTransformation(this))
+                .into(photo);
+        int idFragment = getIntent().getIntExtra("fragmentID", R.id.nav_task);
+        loadFragment(idFragment);
+        navigationView.setCheckedItem(idFragment);
 
-        displaySelectedScreen(R.id.nav_task);
+        gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.server_client_id))
+                .requestEmail()
+                .build();
+
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
     @Override
@@ -45,10 +91,34 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void displaySelectedScreen(int itemId) {
+    private void displaySelectedScreen(final int itemId) {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
 
+        drawer.setDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+            }
+
+            @Override
+            public void onDrawerOpened(View drawerView) {
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                loadFragment(itemId);
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+            }
+        });
+
+        drawer.closeDrawer(GravityCompat.START);
+    }
+
+    private void loadFragment(int itemId)
+    {
         Fragment fragment = null;
-
         switch (itemId) {
             case R.id.nav_workspace:
                 fragment = new WorkspaceFragment();
@@ -59,68 +129,44 @@ public class MainActivity extends AppCompatActivity
             case R.id.nav_task:
                 fragment = new TaskFragment();
                 break;
+            case R.id.nav_logout:
+                mGoogleSignInClient.signOut()
+                        .addOnCompleteListener(this, new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                Intent intent = new Intent(MainActivity.this, UserActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                                finish();
+                                return;
+                            }
+                        });
+                return;
         }
 
-        //replacing the fragment
         if (fragment != null) {
             FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
             ft.replace(R.id.content_frame, fragment);
             ft.commit();
         }
-
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
     }
 
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-
-        //calling the method displayselectedscreen and passing the id of selected menu
         displaySelectedScreen(item.getItemId());
-        //make this method blank
         return true;
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        //getMenuInflater().inflate(R.menu.task, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-/*        if (id == R.id.actionCreate) {
-            Intent intent = new Intent(this, ProjectCreateActivity.class);
-            startActivity(intent);
-            return true;
-        }
-
-        if (idProject == -1 || idProject == 1)
-        {
-            Toast.makeText(this, "Select a project", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-
-        if (id == R.id.actionEdit) {
-            Intent intent = new Intent(this, ProjectEditActivity.class);
-            intent.putExtra("projectID", idProject);
-            startActivity(intent);
-            return true;
-        }*/
-
-        return super.onOptionsItemSelected(item);
+    protected void onStart() {
+        super.onStart();
+        account = GoogleSignIn.getLastSignedInAccount(this);
     }
 
     @Override
     protected void onResume() {
-        /*createProjects(realm.where(Project.class).findAll().sort("id"));
-        if (pos != 0)
-            tvProject.setText(projectsName[pos]);
-        taskAdapter.notifyDataSetChanged();*/
         super.onResume();
     }
 }

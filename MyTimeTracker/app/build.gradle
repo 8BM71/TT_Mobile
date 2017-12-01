@@ -4,7 +4,7 @@ android {
     compileSdkVersion 25
     buildToolsVersion "25.0.3"
     defaultConfig {
-        applicationId "com.ponomarevigor.androidgames.mytimetracker9"
+        applicationId "com.ponomarevigor.androidgames.mytimetracker"
         minSdkVersion 19
         targetSdkVersion 25
         versionCode 9
@@ -30,6 +30,14 @@ dependencies {
 
     compile 'com.chauthai.swipereveallayout:swipe-reveal-layout:1.4.0'
     compile 'com.jaredrummler:colorpicker:1.0.1'
+
+    compile 'com.google.android.gms:play-services-auth:11.6.0'
+
+    compile 'com.github.bumptech.glide:glide:3.7.0'
+    compile 'jp.wasabeef:glide-transformations:2.0.2'
+    compile 'jp.co.cyberagent.android.gpuimage:gpuimage-library:1.4.1'
     //compile 'io.realm:realm-gradle-plugin:3.3.0'
     testCompile 'junit:junit:4.12'
 }
+
+apply plugin: 'com.google.gms.google-services'

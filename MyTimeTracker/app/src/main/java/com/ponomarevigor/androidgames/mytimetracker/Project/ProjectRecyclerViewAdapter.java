@@ -14,6 +14,7 @@ import com.ponomarevigor.androidgames.mytimetracker.Database.Workspace;
 import com.ponomarevigor.androidgames.mytimetracker.ProjectInfo.ProjectInfoActivity;
 import com.ponomarevigor.androidgames.mytimetracker.R;
 import com.ponomarevigor.androidgames.mytimetracker.Task.TaskActivity;
+import com.ponomarevigor.androidgames.mytimetracker.Test.MainActivity;
 
 import java.util.List;
 
@@ -98,8 +99,11 @@ public class ProjectRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVie
         vh.bOpen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(context, TaskActivity.class);
+                //Intent intent = new Intent(context, TaskActivity.class);
+                //intent.putExtra("projectID", project.getId());
+                Intent intent = new Intent(context, MainActivity.class);
                 intent.putExtra("projectID", project.getId());
+                intent.putExtra("fragmentID", R.id.nav_task);
                 context.startActivity(intent);
             }
         });

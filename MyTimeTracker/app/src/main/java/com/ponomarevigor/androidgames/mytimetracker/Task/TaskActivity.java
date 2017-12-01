@@ -24,12 +24,14 @@ import android.widget.Toast;
 
 import com.ponomarevigor.androidgames.mytimetracker.Database.Project;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Task;
+import com.ponomarevigor.androidgames.mytimetracker.Database.User;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Workspace;
 import com.ponomarevigor.androidgames.mytimetracker.Project.ProjectActivity;
 import com.ponomarevigor.androidgames.mytimetracker.Project.ProjectCreateActivity;
 import com.ponomarevigor.androidgames.mytimetracker.Project.ProjectEditActivity;
 import com.ponomarevigor.androidgames.mytimetracker.R;
 import com.ponomarevigor.androidgames.mytimetracker.Task.ItemTaskTouchHelper.ItemTaskTouchHelper;
+import com.ponomarevigor.androidgames.mytimetracker.User.UserActivity;
 import com.ponomarevigor.androidgames.mytimetracker.Workspace.WorkspaceActivity;
 
 import java.util.ArrayList;
@@ -61,6 +63,9 @@ public class TaskActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.task_activity_main);
+        Realm.init(this);
+        realm = Realm.getDefaultInstance();
+        checkUser();
         /////////////////////////////////////////////////////
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -83,8 +88,6 @@ public class TaskActivity extends AppCompatActivity
         navigationView.setCheckedItem(R.id.nav_task);
         /////////////////////////////////////////////////////
 
-        Realm.init(this);
-        realm = Realm.getDefaultInstance();
         projects = realm.where(Project.class).findAll().sort("id");
         if (projects.size() == 0) initProject();
 
@@ -372,5 +375,14 @@ public class TaskActivity extends AppCompatActivity
                 models.add(new ModelTask(t));
         }
         return models;
+    }
+
+    private void checkUser()
+    {
+        if (realm.where(User.class).equalTo("id", 0).findFirst() == null)
+        {
+            Intent intent = new Intent(this, UserActivity.class);
+            startActivity(intent);
+        }
     }
 }
