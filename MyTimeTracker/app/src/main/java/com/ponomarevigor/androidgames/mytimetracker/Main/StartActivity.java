@@ -1,4 +1,4 @@
-package com.ponomarevigor.androidgames.mytimetracker.Test;
+package com.ponomarevigor.androidgames.mytimetracker.Main;
 
 import android.content.Intent;
 import android.os.Bundle;

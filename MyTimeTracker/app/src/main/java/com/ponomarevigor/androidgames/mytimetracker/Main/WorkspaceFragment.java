@@ -1,24 +1,18 @@
-package com.ponomarevigor.androidgames.mytimetracker.Test;
+package com.ponomarevigor.androidgames.mytimetracker.Main;
 
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -26,9 +20,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.ponomarevigor.androidgames.mytimetracker.Database.Workspace;
-import com.ponomarevigor.androidgames.mytimetracker.Project.ProjectActivity;
 import com.ponomarevigor.androidgames.mytimetracker.R;
-import com.ponomarevigor.androidgames.mytimetracker.Task.TaskActivity;
 import com.ponomarevigor.androidgames.mytimetracker.Workspace.WorkspaceRecyclerViewAdapter;
 
 import io.realm.Realm;

@@ -37,8 +37,7 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
         this.models = models;
         this.realm = realm;
         types = new int[models.size()];
-        for (int i = 0; i < models.size(); i++)
-        {
+        for (int i = 0; i < models.size(); i++) {
             if (models.get(i).getTask() == null)
                 types[i] = 1;
             else
@@ -48,7 +47,7 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
 
     @Override
     public int getItemViewType(int position) {
-        return (types[position] == 1) ? 1:0;
+        return (types[position] == 1) ? 1 : 0;
     }
 
     @Override
@@ -65,29 +64,27 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
     public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
         if (holder.getItemViewType() == 0) {
             final TaskNameViewHolder vh = (TaskNameViewHolder) holder;
-            vh.tvName.setText(models.get(position).getTask().getName());
-        }
-        else {
+            Task task = models.get(position).getTask();
+            vh.tvName.setText(task.getName());
+            if (task.getStatistics().size() != 0)
+            {
+                vh.tvResult.setVisibility(View.GONE);
+            }
+        } else {
             final TaskStatViewHolder vh = (TaskStatViewHolder) holder;
             final StatisticsTask stat = models.get(position).getStat();
 
-            if (stat.getState() == StatisticsTask.SET_AUTO) {
-                vh.tvStartDate.setText(vh.calculateDate(stat.getStartAuto()));
-                vh.tvEndDate.setText(vh.calculateDate(stat.getEndAuto()));
-                vh.tvTime.setText(vh.calculateTime(stat.getDurationAuto()));
-            } else {
-                vh.tvStartDate.setText(vh.calculateDate(stat.getStartManual()));
-                vh.tvEndDate.setText(vh.calculateDate(stat.getEndManual()));
-                vh.tvTime.setText(vh.calculateTime(stat.getDurationManual()));
-            }
 
-            String note = stat.getDescription();
+            vh.tvStartDate.setText(vh.calculateDate(stat.getStart()));
+            vh.tvEndDate.setText(vh.calculateDate(stat.getEnd()));
+            vh.tvTime.setText(vh.calculateTime(stat.getDuration()));
+
+            String note = stat.getNote();
             if (note != null) {
                 if (!note.isEmpty()) {
                     vh.layoutNote.setVisibility(View.VISIBLE);
                     vh.tvNote.setText(note);
-                }
-                else
+                } else
                     vh.layoutNote.setVisibility(View.GONE);
             } else
                 vh.layoutNote.setVisibility(View.GONE);

@@ -8,8 +8,6 @@ import android.view.View;
 import android.widget.Chronometer;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -19,11 +17,9 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.ponomarevigor.androidgames.mytimetracker.Database.User;
 import com.ponomarevigor.androidgames.mytimetracker.R;
-import com.ponomarevigor.androidgames.mytimetracker.Task.TaskActivity;
-import com.ponomarevigor.androidgames.mytimetracker.Test.MainActivity;
+import com.ponomarevigor.androidgames.mytimetracker.Main.MainActivity;
 
 import io.realm.Realm;
-import jp.wasabeef.glide.transformations.CropCircleTransformation;
 
 /**
  * Created by Igorek on 30.11.2017.

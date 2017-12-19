@@ -13,8 +13,7 @@ import com.ponomarevigor.androidgames.mytimetracker.Database.Task;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Workspace;
 import com.ponomarevigor.androidgames.mytimetracker.ProjectInfo.ProjectInfoActivity;
 import com.ponomarevigor.androidgames.mytimetracker.R;
-import com.ponomarevigor.androidgames.mytimetracker.Task.TaskActivity;
-import com.ponomarevigor.androidgames.mytimetracker.Test.MainActivity;
+import com.ponomarevigor.androidgames.mytimetracker.Main.MainActivity;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.ponomarevigor.androidgames.mytimetracker.Test;
+package com.ponomarevigor.androidgames.mytimetracker.Main;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -9,11 +9,8 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
@@ -56,7 +53,7 @@ public class MainActivity extends AppCompatActivity
         realm = Realm.getDefaultInstance();
         account = GoogleSignIn.getLastSignedInAccount(this);
         User user = realm.where(User.class).equalTo("id", 0).findFirst();
-        //Log.d("myLog", "idToken" + user.getIdToken());
+        Log.d("myLog", "size = " + user.getIdToken().length() + "; idToken" + user.getIdToken());
         //tvName.setText(account.getDisplayName());
         //tvEmail.setText(account.getEmail());
         tvName.setText(user.getName());

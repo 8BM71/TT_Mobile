@@ -24,7 +24,7 @@ import java.util.Date;
 
 public class TaskStatViewHolder extends RecyclerView.ViewHolder {
     LinearLayout layoutTracker;
-    Button bAuto, bManual;
+    //Button bAuto, bManual;
     TextView tvTime, tvStartDate, tvEndDate, tvNote;
     //Ограничения для установки времени в режиме Manual
     int hourTask, minTask, secTask;
@@ -36,8 +36,8 @@ public class TaskStatViewHolder extends RecyclerView.ViewHolder {
         super(view);
         this.context = context;
         layoutTracker = (LinearLayout) view.findViewById(R.id.layoutTracker);
-        bAuto = (Button) view.findViewById(R.id.bAuto);
-        bManual = (Button) view.findViewById(R.id.bManual);
+/*        bAuto = (Button) view.findViewById(R.id.bAuto);
+        bManual = (Button) view.findViewById(R.id.bManual);*/
         tvNote = (TextView)view.findViewById(R.id.tvNote);
         tvTime = (TextView)view.findViewById(R.id.tvTime);
         tvStartDate = (TextView)view.findViewById(R.id.tvStartDate);
@@ -47,10 +47,41 @@ public class TaskStatViewHolder extends RecyclerView.ViewHolder {
         etDescription.setMaxLines(8);
     }
 
+    public void init(long start, long end)
+    {
+        tvTime.setEnabled(true);
+        tvStartDate.setEnabled(true);
+        tvEndDate.setEnabled(true);
+        tvTime.setTextColor(Color.DKGRAY);
+        tvStartDate.setTextColor(Color.DKGRAY);
+        tvEndDate.setTextColor(Color.DKGRAY);
+        //tvTime.setPaintFlags(0);
+        //tvStartDate.setPaintFlags(0);
+        //tvEndDate.setPaintFlags(0);
+        tvTime.setPaintFlags(tvTime.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
+        tvStartDate.setPaintFlags(tvStartDate.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
+        tvEndDate.setPaintFlags(tvEndDate.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
+
+        this.start = start;
+        this.end = end;
+        result = (end - start) / 1000;
+        if (result < 0)
+        {
+            hourTask = 0;
+            minTask = 0;
+        }
+        else
+        {
+            hourTask = (int) result / 3600;
+            minTask = (int) (result % 3600) / 60;
+        }
+    }
+
+
     public void initAuto()
     {
-        bAuto.getBackground().setColorFilter(context.getResources().getColor(R.color.colorAccent), PorterDuff.Mode.SRC_ATOP);
-        bManual.getBackground().setColorFilter(Color.LTGRAY, PorterDuff.Mode.SRC_ATOP);
+        //bAuto.getBackground().setColorFilter(context.getResources().getColor(R.color.colorAccent), PorterDuff.Mode.SRC_ATOP);
+        //bManual.getBackground().setColorFilter(Color.LTGRAY, PorterDuff.Mode.SRC_ATOP);
         tvTime.setEnabled(false);
         tvStartDate.setEnabled(false);
         tvEndDate.setEnabled(false);
@@ -64,8 +95,8 @@ public class TaskStatViewHolder extends RecyclerView.ViewHolder {
 
     public void initManual(long start, long end)
     {
-        bManual.getBackground().setColorFilter(context.getResources().getColor(R.color.colorAccent), PorterDuff.Mode.SRC_ATOP);
-        bAuto.getBackground().setColorFilter(Color.LTGRAY, PorterDuff.Mode.SRC_ATOP);
+        //bManual.getBackground().setColorFilter(context.getResources().getColor(R.color.colorAccent), PorterDuff.Mode.SRC_ATOP);
+        //bAuto.getBackground().setColorFilter(Color.LTGRAY, PorterDuff.Mode.SRC_ATOP);
         tvTime.setEnabled(true);
         tvStartDate.setEnabled(true);
         tvEndDate.setEnabled(true);

@@ -11,9 +11,8 @@ import android.widget.Toast;
 
 import com.ponomarevigor.androidgames.mytimetracker.Database.Project;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Workspace;
-import com.ponomarevigor.androidgames.mytimetracker.Project.ProjectActivity;
 import com.ponomarevigor.androidgames.mytimetracker.R;
-import com.ponomarevigor.androidgames.mytimetracker.Test.MainActivity;
+import com.ponomarevigor.androidgames.mytimetracker.Main.MainActivity;
 
 import java.util.List;
 

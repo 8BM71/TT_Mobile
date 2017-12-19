@@ -1,18 +1,15 @@
-package com.ponomarevigor.androidgames.mytimetracker.Test;
+package com.ponomarevigor.androidgames.mytimetracker.Main;
 
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -30,7 +27,6 @@ import android.widget.Toast;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Project;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Task;
 import com.ponomarevigor.androidgames.mytimetracker.Database.Workspace;
-import com.ponomarevigor.androidgames.mytimetracker.Project.ProjectActivity;
 import com.ponomarevigor.androidgames.mytimetracker.Project.ProjectCreateActivity;
 import com.ponomarevigor.androidgames.mytimetracker.Project.ProjectEditActivity;
 import com.ponomarevigor.androidgames.mytimetracker.R;
@@ -38,7 +34,6 @@ import com.ponomarevigor.androidgames.mytimetracker.Task.AdapterDialog;
 import com.ponomarevigor.androidgames.mytimetracker.Task.ItemTaskTouchHelper.ItemTaskTouchHelper;
 import com.ponomarevigor.androidgames.mytimetracker.Task.ModelTask;
 import com.ponomarevigor.androidgames.mytimetracker.Task.TaskRecyclerViewAdapter;
-import com.ponomarevigor.androidgames.mytimetracker.Workspace.WorkspaceActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,6 +66,7 @@ public class TaskFragment extends Fragment {
 
         Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
         ((MainActivity)getActivity()).setSupportActionBar(toolbar);
+        ((MainActivity)getActivity()).getSupportActionBar().setDisplayShowTitleEnabled(false);
         DrawerLayout drawer = (DrawerLayout) getActivity().findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 getActivity(), drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -104,6 +100,7 @@ public class TaskFragment extends Fragment {
         recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
         taskAdapter = new TaskRecyclerViewAdapter(getContext(), models, tasks, project, realm);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
+        recyclerView.setNestedScrollingEnabled(false); //Если используется совместно с ScrollView
         recyclerView.setAdapter(taskAdapter);
         ItemTouchHelper.Callback callback = new ItemTaskTouchHelper(taskAdapter);
         touchHelper = new ItemTouchHelper(callback);

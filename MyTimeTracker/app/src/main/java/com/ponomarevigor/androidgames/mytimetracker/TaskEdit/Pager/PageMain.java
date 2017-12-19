@@ -123,13 +123,9 @@ public class PageMain extends Fragment {
 
                     StatisticsTask stat = realm.createObject(StatisticsTask.class);
                     stat.setId(realm.where(StatisticsTask.class).max("id").intValue() + 1);
-                    stat.setState(StatisticsTask.SET_AUTO);
-                    stat.setStartManual(task.getTimeCreated());
-                    stat.setStartAuto(task.getTimeCreated());
-                    stat.setEndManual(task.getTimeFinish());
-                    stat.setEndAuto(task.getTimeFinish());
-                    stat.setDurationManual(task.getDuration());
-                    stat.setDurationAuto(task.getDuration());
+                    stat.setStart(task.getTimeCreated());
+                    stat.setEnd(task.getTimeFinish());
+                    stat.setDuration(task.getDuration());
                     task.getStatistics().add(stat);
                     realm.commitTransaction();
                     stop();

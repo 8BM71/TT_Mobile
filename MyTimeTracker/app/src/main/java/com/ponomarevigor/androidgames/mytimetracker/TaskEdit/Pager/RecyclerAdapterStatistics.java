@@ -63,51 +63,14 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
         final ChangeStat changeStat = changeStats.get(position);
         changeStat.setId(stat.getId());
 
-        if (stat.getState() == StatisticsTask.SET_AUTO) {
-            vh.initAuto();
-            vh.tvStartDate.setText(vh.calculateDate(stat.getStartAuto()));
-            vh.tvEndDate.setText(vh.calculateDate(stat.getEndAuto()));
-            vh.tvTime.setText(vh.calculateTime(stat.getDurationAuto()));
-        }
-        else {
-            vh.initManual(stat.getStartManual(), stat.getEndManual());
-            vh.tvStartDate.setText(vh.calculateDate(stat.getStartManual()));
-            vh.tvEndDate.setText(vh.calculateDate(stat.getEndManual()));
-            vh.tvTime.setText(vh.calculateTime(stat.getDurationManual()));
-        }
+        vh.init(stat.getStart(), stat.getEnd());
+        vh.tvStartDate.setText(vh.calculateDate(stat.getStart()));
+        vh.tvEndDate.setText(vh.calculateDate(stat.getEnd()));
+        vh.tvTime.setText(vh.calculateTime(stat.getDuration()));
 
-        vh.etDescription.setText(stat.getDescription());
+
+        vh.etDescription.setText(stat.getNote());
         vh.tvNote.setText("Note (" + (200 - vh.etDescription.length()) + "):");
-
-        vh.bAuto.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                vh.initAuto();
-                vh.tvStartDate.setText(vh.calculateDate(stat.getStartAuto()));
-                vh.tvEndDate.setText(vh.calculateDate(stat.getEndAuto()));
-                vh.tvTime.setText(vh.calculateTime(stat.getDurationAuto()));
-
-                changeStat.setState(StatisticsTask.SET_AUTO);
-                realm.beginTransaction();
-                stat.setState(StatisticsTask.SET_AUTO);
-                realm.commitTransaction();
-            }
-        });
-
-        vh.bManual.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                vh.initManual(stat.getStartManual(), stat.getEndManual());
-                vh.tvStartDate.setText(vh.calculateDate(stat.getStartManual()));
-                vh.tvEndDate.setText(vh.calculateDate(stat.getEndManual()));
-                vh.tvTime.setText(vh.calculateTime(stat.getDurationManual()));
-
-                changeStat.setState(StatisticsTask.SET_MANUAL);
-                realm.beginTransaction();
-                stat.setState(StatisticsTask.SET_MANUAL);
-                realm.commitTransaction();
-            }
-        });
 
         vh.tvStartDate.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -175,13 +138,13 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
     private void updateDescriptionTask(StatisticsTask statistics,
                                        ChangeStat changeStat, String note)
     {
-        if (note.equals(statistics.getDescription()))
+        if (note.equals(statistics.getNote()))
             return;
         else
         {
             changeStat.setDescription(note);
             realm.beginTransaction();
-            statistics.setDescription(note);
+            statistics.setNote(note);
             realm.commitTransaction();
         }
     }
@@ -216,9 +179,9 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
 
         Calendar calendar = Calendar.getInstance();
         if (time.equals("start"))
-            calendar.setTimeInMillis(stat.getStartManual());
+            calendar.setTimeInMillis(stat.getStart());
         else
-            calendar.setTimeInMillis(stat.getEndManual());
+            calendar.setTimeInMillis(stat.getEnd());
 
         datePicker.init(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), null);
 
@@ -247,7 +210,7 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
 
                             changeStat.setStartManual(dateLong);
                             realm.beginTransaction();
-                            stat.setStartManual(dateLong);
+                            stat.setStart(dateLong);
                             realm.commitTransaction();
                         }
                         else {
@@ -256,7 +219,7 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
 
                             changeStat.setEndManual(dateLong);
                             realm.beginTransaction();
-                            stat.setEndManual(dateLong);
+                            stat.setEnd(dateLong);
                             realm.commitTransaction();
                         }
 
@@ -264,11 +227,11 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
                         realm.beginTransaction();
                         if (duration > 0) {
                             changeStat.setDurationManual(vh.end - vh.start);
-                            stat.setDurationManual(vh.end - vh.start);
+                            stat.setDuration(vh.end - vh.start);
                         }
                         else {
                             changeStat.setDurationManual(0);
-                            stat.setDurationManual(0);
+                            stat.setDuration(0);
                         }
                         realm.commitTransaction();
                         vh.calculateTime();
@@ -326,7 +289,7 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
 
                         changeStat.setDurationManual(dateLong);
                         realm.beginTransaction();
-                        stat.setDurationManual(dateLong);
+                        stat.setDuration(dateLong);
                         realm.commitTransaction();
 
                     }

@@ -112,9 +112,10 @@
         android:maxLines="4"
         android:scrollbars="vertical"
         android:maxLength="200"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        />
 
-    <Button
+<!--    <Button
         android:id="@+id/bAuto"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -134,5 +135,5 @@
         android:clickable="true"
         android:text="MANUAL"
         android:textColor="@android:color/background_light"
-        />
+        />-->
 </RelativeLayout>

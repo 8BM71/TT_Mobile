@@ -8,86 +8,14 @@ import io.realm.RealmObject;
 
 public class StatisticsTask extends RealmObject {
     public int id;
-    public static final int SET_AUTO = 0;
-    public static final int SET_MANUAL = 1;
-
-    int state;
-    long durationAuto;
-    long startAuto;
-    long endAuto;
-    long durationManual;
-    long startManual;
-    long endManual;
-
-    String description;
+    long duration;
+    long start;
+    long end;
+    String note;
 
     public StatisticsTask()
     {
 
-    }
-
-    public int getState() {
-        return state;
-    }
-
-    public void setState(int state) {
-        this.state = state;
-    }
-
-    public long getDurationAuto() {
-        return durationAuto;
-    }
-
-    public void setDurationAuto(long durationAuto) {
-        this.durationAuto = durationAuto;
-    }
-
-    public long getStartAuto() {
-        return startAuto;
-    }
-
-    public void setStartAuto(long startAuto) {
-        this.startAuto = startAuto;
-    }
-
-    public long getEndAuto() {
-        return endAuto;
-    }
-
-    public void setEndAuto(long endAuto) {
-        this.endAuto = endAuto;
-    }
-
-    public long getDurationManual() {
-        return durationManual;
-    }
-
-    public void setDurationManual(long durationManual) {
-        this.durationManual = durationManual;
-    }
-
-    public long getStartManual() {
-        return startManual;
-    }
-
-    public void setStartManual(long startManual) {
-        this.startManual = startManual;
-    }
-
-    public long getEndManual() {
-        return endManual;
-    }
-
-    public void setEndManual(long endManual) {
-        this.endManual = endManual;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public int getId() {
@@ -96,5 +24,37 @@ public class StatisticsTask extends RealmObject {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
+    }
+
+    public long getStart() {
+        return start;
+    }
+
+    public void setStart(long start) {
+        this.start = start;
+    }
+
+    public long getEnd() {
+        return end;
+    }
+
+    public void setEnd(long end) {
+        this.end = end;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
     }
 }

@@ -19,11 +19,13 @@ import java.util.Date;
 
 public class TaskNameViewHolder extends RecyclerView.ViewHolder {
     TextView tvName;
+    TextView tvResult;
     Context context;
 
     public TaskNameViewHolder(View view, Context context) {
         super(view);
         this.context = context;
         tvName = (TextView)view.findViewById(R.id.tvTaskName);
+        tvResult = (TextView)view.findViewById(R.id.tvResult);
     }
 }
