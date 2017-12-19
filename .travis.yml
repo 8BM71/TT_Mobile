@@ -31,10 +31,10 @@ android:
   - google-gdk-license-.+
 
 install:
-  - chmod +x ./MyTimeTracker/gradlew
+  - chmod +x ./TimeTracker/gradlew
  
 before_script:
-  - cd MyTimeTracker
+  - cd TimeTracker
   - pwd
   - ls -la
  
