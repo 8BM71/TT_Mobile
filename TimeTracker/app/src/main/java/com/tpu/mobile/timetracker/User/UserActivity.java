@@ -105,6 +105,7 @@ public class UserActivity extends AppCompatActivity implements View.OnClickListe
     private void loadActivity(GoogleSignInAccount account)
     {
         User user = new User();
+        Log.d("myLog", "id = " + account.getId());
         user.setId(0);
         user.setName(account.getDisplayName());
         user.setEmail(account.getEmail());

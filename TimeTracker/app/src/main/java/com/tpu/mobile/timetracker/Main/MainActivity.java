@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity
         account = GoogleSignIn.getLastSignedInAccount(this);
         User user = realm.where(User.class).equalTo("id", 0).findFirst();
         Log.d("myLog", "size = " + user.getIdToken().length() + "; idToken" + user.getIdToken());
+        Log.d("myLog", "id = " + user.getId());
         //tvName.setText(account.getDisplayName());
         //tvEmail.setText(account.getEmail());
         tvName.setText(user.getName());
