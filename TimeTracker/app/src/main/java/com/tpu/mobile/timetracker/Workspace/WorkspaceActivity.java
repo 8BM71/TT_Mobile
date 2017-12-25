@@ -22,7 +22,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.tpu.mobile.timetracker.Database.Workspace;
+import com.tpu.mobile.timetracker.Database.Model.Workspace;
 import com.tpu.mobile.timetracker.Project.ProjectActivity;
 import com.tpu.mobile.timetracker.R;
 import com.tpu.mobile.timetracker.Task.TaskActivity;

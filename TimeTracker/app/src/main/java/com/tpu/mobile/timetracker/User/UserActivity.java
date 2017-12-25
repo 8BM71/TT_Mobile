@@ -15,7 +15,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
-import com.tpu.mobile.timetracker.Database.User;
+import com.tpu.mobile.timetracker.Database.Model.User;
 import com.tpu.mobile.timetracker.R;
 import com.tpu.mobile.timetracker.Main.MainActivity;
 

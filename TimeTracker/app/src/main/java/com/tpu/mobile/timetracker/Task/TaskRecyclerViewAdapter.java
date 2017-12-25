@@ -10,9 +10,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.tpu.mobile.timetracker.Database.Project;
-import com.tpu.mobile.timetracker.Database.StatisticsTask;
-import com.tpu.mobile.timetracker.Database.Task;
+import com.tpu.mobile.timetracker.Database.Model.Project;
+import com.tpu.mobile.timetracker.Database.Model.StatisticsTask;
+import com.tpu.mobile.timetracker.Database.Model.Task;
 import com.tpu.mobile.timetracker.R;
 import com.tpu.mobile.timetracker.Task.ItemTaskTouchHelper.ItemTaskTouchHelperAdapter;
 import com.tpu.mobile.timetracker.TaskEdit.TaskEditActivity;

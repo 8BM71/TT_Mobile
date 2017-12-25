@@ -23,8 +23,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.tpu.mobile.timetracker.Database.Project;
-import com.tpu.mobile.timetracker.Database.Workspace;
+import com.tpu.mobile.timetracker.Database.Model.Project;
+import com.tpu.mobile.timetracker.Database.Model.Workspace;
 import com.tpu.mobile.timetracker.Project.ProjectCreateActivity;
 import com.tpu.mobile.timetracker.Project.ProjectRecyclerViewAdapter;
 import com.tpu.mobile.timetracker.R;

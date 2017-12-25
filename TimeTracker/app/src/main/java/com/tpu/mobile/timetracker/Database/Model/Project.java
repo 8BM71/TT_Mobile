@@ -1,4 +1,4 @@
-package com.tpu.mobile.timetracker.Database;
+package com.tpu.mobile.timetracker.Database.Model;
 
 import io.realm.RealmObject;
 

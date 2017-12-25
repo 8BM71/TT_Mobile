@@ -8,7 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
 
-import com.tpu.mobile.timetracker.Database.Project;
+import com.tpu.mobile.timetracker.Database.Model.Project;
 import com.tpu.mobile.timetracker.ProjectInfo.Pager.PageAdapter;
 import com.tpu.mobile.timetracker.R;
 

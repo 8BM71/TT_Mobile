@@ -6,8 +6,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.tpu.mobile.timetracker.Database.StatisticsTask;
-import com.tpu.mobile.timetracker.Database.Task;
+import com.tpu.mobile.timetracker.Database.Model.StatisticsTask;
+import com.tpu.mobile.timetracker.Database.Model.Task;
 import com.tpu.mobile.timetracker.R;
 
 import java.util.List;

@@ -8,8 +8,8 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.tpu.mobile.timetracker.Database.Project;
-import com.tpu.mobile.timetracker.Database.Task;
+import com.tpu.mobile.timetracker.Database.Model.Project;
+import com.tpu.mobile.timetracker.Database.Model.Task;
 import com.tpu.mobile.timetracker.R;
 
 import java.text.SimpleDateFormat;

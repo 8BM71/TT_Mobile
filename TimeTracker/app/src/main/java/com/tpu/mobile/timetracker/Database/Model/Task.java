@@ -1,4 +1,4 @@
-package com.tpu.mobile.timetracker.Database;
+package com.tpu.mobile.timetracker.Database.Model;
 
 import io.realm.RealmList;
 import io.realm.RealmObject;
@@ -116,5 +116,18 @@ public class Task extends RealmObject {
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Task)) return false;
+
+        Task task = (Task) obj;
+        return this.getId() == task.getId() &&
+                this.getName().equals(task.getName()) &&
+                this.getDescription().equals(task.getDescription()) &&
+                this.getTimeCreated() == task.getTimeCreated() &&
+                this.getTimeStart() == task.getTimeStart() &&
+                this.getTimeFinish() == task.getTimeFinish();
     }
 }

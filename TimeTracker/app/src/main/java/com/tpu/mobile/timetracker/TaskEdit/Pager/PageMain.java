@@ -15,9 +15,9 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 
 
-import com.tpu.mobile.timetracker.Database.Project;
-import com.tpu.mobile.timetracker.Database.StatisticsTask;
-import com.tpu.mobile.timetracker.Database.Task;
+import com.tpu.mobile.timetracker.Database.Model.Project;
+import com.tpu.mobile.timetracker.Database.Model.StatisticsTask;
+import com.tpu.mobile.timetracker.Database.Model.Task;
 import com.tpu.mobile.timetracker.R;
 
 

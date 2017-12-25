@@ -7,7 +7,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import com.tpu.mobile.timetracker.Database.Project;
+import com.tpu.mobile.timetracker.Database.Model.Project;
 import com.tpu.mobile.timetracker.R;
 
 import java.util.List;

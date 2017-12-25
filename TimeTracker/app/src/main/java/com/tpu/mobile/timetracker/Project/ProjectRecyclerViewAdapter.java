@@ -8,9 +8,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.tpu.mobile.timetracker.Database.Project;
-import com.tpu.mobile.timetracker.Database.Task;
-import com.tpu.mobile.timetracker.Database.Workspace;
+import com.tpu.mobile.timetracker.Database.Model.Project;
+import com.tpu.mobile.timetracker.Database.Model.Task;
+import com.tpu.mobile.timetracker.Database.Model.Workspace;
 import com.tpu.mobile.timetracker.ProjectInfo.ProjectInfoActivity;
 import com.tpu.mobile.timetracker.R;
 import com.tpu.mobile.timetracker.Main.MainActivity;

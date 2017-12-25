@@ -18,7 +18,7 @@ import android.widget.NumberPicker;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
-import com.tpu.mobile.timetracker.Database.StatisticsTask;
+import com.tpu.mobile.timetracker.Database.Model.StatisticsTask;
 import com.tpu.mobile.timetracker.R;
 
 

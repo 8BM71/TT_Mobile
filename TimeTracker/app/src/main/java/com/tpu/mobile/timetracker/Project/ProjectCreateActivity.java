@@ -12,8 +12,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.jaredrummler.android.colorpicker.ColorPickerView;
-import com.tpu.mobile.timetracker.Database.Project;
-import com.tpu.mobile.timetracker.Database.Workspace;
+import com.tpu.mobile.timetracker.Database.Model.Project;
+import com.tpu.mobile.timetracker.Database.Model.Workspace;
 import com.tpu.mobile.timetracker.R;
 
 import java.util.List;

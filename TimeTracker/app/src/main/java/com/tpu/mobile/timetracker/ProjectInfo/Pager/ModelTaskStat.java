@@ -1,7 +1,7 @@
 package com.tpu.mobile.timetracker.ProjectInfo.Pager;
 
-import com.tpu.mobile.timetracker.Database.StatisticsTask;
-import com.tpu.mobile.timetracker.Database.Task;
+import com.tpu.mobile.timetracker.Database.Model.StatisticsTask;
+import com.tpu.mobile.timetracker.Database.Model.Task;
 
 /**
  * Created by Igorek on 25.11.2017.
