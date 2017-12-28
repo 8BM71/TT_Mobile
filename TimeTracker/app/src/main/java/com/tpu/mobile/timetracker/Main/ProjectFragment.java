@@ -12,6 +12,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -20,38 +21,63 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.apollographql.apollo.ApolloCall;
+import com.apollographql.apollo.ApolloClient;
+import com.apollographql.apollo.api.Response;
+import com.apollographql.apollo.rx2.Rx2Apollo;
+import com.tpu.mobile.timetracker.Database.Controller.ProjectController;
+import com.tpu.mobile.timetracker.Database.Controller.WorkspaceController;
 import com.tpu.mobile.timetracker.Database.Model.Project;
 import com.tpu.mobile.timetracker.Database.Model.Workspace;
+import com.tpu.mobile.timetracker.MainApplication;
 import com.tpu.mobile.timetracker.Project.ProjectCreateActivity;
 import com.tpu.mobile.timetracker.Project.ProjectRecyclerViewAdapter;
 import com.tpu.mobile.timetracker.R;
 import com.tpu.mobile.timetracker.Workspace.WorkspaceEditActivity;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import api.CreateWorkspace;
+import api.GetProjects;
+import api.GetWorkspaces;
+import api.type.WorkspaceInput;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.observers.DisposableObserver;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
 public class ProjectFragment extends Fragment {
-
+    ApolloClient client;
     Realm realm;
+    WorkspaceController workspaceController;
+    ProjectController projectController;
+    String ownerID;
     RealmResults<Project> projects;
     RealmResults<Workspace> workspaces;
     Workspace workspace;
     RecyclerView recyclerView;
+    ProgressBar progressBar;
     ProjectRecyclerViewAdapter projectAdapter;
     TextView tvWorkspace;
-
     String[] workspacesName;
     int pos = 0;
-    int idWorkspace;
+    String idWorkspace;
+
+    public ProjectFragment(String ownerID) {
+        this.ownerID = ownerID;
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         View view = inflater.inflate(R.layout.xxx_project_app_bar_main, container, false);
-
         Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
         ((MainActivity)getActivity()).setSupportActionBar(toolbar);
         DrawerLayout drawer = (DrawerLayout) getActivity().findViewById(R.id.drawer_layout);
@@ -59,7 +85,6 @@ public class ProjectFragment extends Fragment {
                 getActivity(), drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
-
         FloatingActionButton fab = (FloatingActionButton) view.findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,56 +92,147 @@ public class ProjectFragment extends Fragment {
                 createProject();
             }
         });
-        Realm.init(getContext());
-        realm = Realm.getDefaultInstance();
-        workspaces = realm.where(Workspace.class).findAll().sort("id");
-        idWorkspace = getActivity().getIntent().getIntExtra("workspaceID", -1);
-        if (idWorkspace == -1)
-            projects = realm.where(Project.class).findAll().sort("id");
+        recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
+        progressBar = (ProgressBar) view.findViewById(R.id.progressBar);
+
+        client = ((MainApplication)getActivity().getApplication()).getApolloClient();
+        realm = ((MainApplication)getActivity().getApplication()).getRealm();
+        workspaceController = new WorkspaceController(realm);
+        projectController = new ProjectController(realm);
+        checkWorkspaces();
+        checkProjects();
+        idWorkspace = getActivity().getIntent().getStringExtra("workspaceID");
+        Log.d("myLog", "idWorkspace = " + idWorkspace);
+        if (idWorkspace == null || idWorkspace.isEmpty()) {
+            idWorkspace = "all";
+            projects = projectController.getProjects();
+        }
         else {
-            workspace = realm.where(Workspace.class).equalTo("id", idWorkspace).findFirst();
-            projects = realm.where(Project.class).equalTo("workspace.id", workspace.getId()).findAll();
+            if (workspaceController.getWorkspace(idWorkspace).getId() == null)
+                idWorkspace = workspaces.get(0).getId();
+            workspace = workspaceController.getWorkspace(idWorkspace);
+            projects = projectController.getProjectsOfWs(idWorkspace);
         }
 
-        recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
-        projectAdapter = new ProjectRecyclerViewAdapter(getContext(), projects, workspace, realm);
+        projectAdapter = new ProjectRecyclerViewAdapter(getContext(), client, realm, projects);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(projectAdapter);
         recyclerView.setItemViewCacheSize(projects.size());
 
-        createWorkspaces(workspaces);
-
+        createListWorkspaces(workspaces);
         tvWorkspace = (TextView) view.findViewById(R.id.tvWorkspace);
-        if (idWorkspace == -1)
+        if (idWorkspace.equals("all"))
             tvWorkspace.setText(workspacesName[0]);
         else
             tvWorkspace.setText(workspace.getName());
-
         tvWorkspace.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 showWorkspaceDialog();
             }
         });
-
         return view;
     }
 
-    private void createWorkspaces(RealmResults<Workspace> workspaces)
+    private void checkWorkspaces()
     {
+        if (workspaceController.getWorkspaces().size() != 0)
+            workspaces = workspaceController.getWorkspaces();
+        else
+            loadWorkspaces();
+    }
+
+    private void loadWorkspaces()
+    {
+        progressBar.setVisibility(View.VISIBLE);
+        ApolloCall<GetWorkspaces.Data> response = client.query(new GetWorkspaces(ownerID));
+        Rx2Apollo.from(response)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<GetWorkspaces.Data>>() {
+                    @Override
+                    public void onNext(Response<GetWorkspaces.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty())
+                            workspaces = workspaceController.createWorkspaces(dataResponse.data().workspaces());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                        progressBar.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        progressBar.setVisibility(View.GONE);
+                        createListWorkspaces(workspaceController.getWorkspaces());
+                    }
+                });
+    }
+
+    private void checkProjects()
+    {
+        if (projectController.getProjects().size() != 0)
+            projects = projectController.getProjects();
+        else
+            loadProjects();
+    }
+
+    private void loadProjects()
+    {
+        progressBar.setVisibility(View.VISIBLE);
+        ApolloCall<GetProjects.Data> response = client.query(new GetProjects(ownerID));
+        Rx2Apollo.from(response)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<GetProjects.Data>>() {
+                    @Override
+                    public void onNext(Response<GetProjects.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty()) {
+                            List<GetProjects.Project> prjs = new ArrayList<GetProjects.Project>();
+                            List<String> ids = new ArrayList<String>();
+                            Log.d("myLog", "getProjects-data:" + dataResponse.data());
+                            for (int i = 0; i < dataResponse.data().workspaces().size(); i++) {
+                                for (int j = 0; j < dataResponse.data().workspaces().get(i).projects().size(); j++) {
+                                    prjs.add(dataResponse.data().workspaces().get(i).projects().get(j));
+                                    ids.add(dataResponse.data().workspaces().get(i).id());
+                                }
+                            }
+                            projects = projectController.createProjects(prjs, ids);
+                            Log.d("myLog", "getProjects-error:" + dataResponse.errors());
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                        progressBar.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        progressBar.setVisibility(View.GONE);
+                        projectAdapter.setProjects(projects);
+                    }
+                });
+    }
+
+    private void createListWorkspaces(RealmResults<Workspace> workspaces)
+    {
+        if (workspaces == null)
+        {
+            workspacesName = new String[]{"All projects"};
+            return;
+        }
         workspacesName = new String[workspaces.size() + 1];
         workspacesName[0] = "All projects";
         for (int i = 0; i < workspaces.size(); i++)
-        {
             workspacesName[i + 1] = workspaces.get(i).getName();
-        }
     }
 
     private void createProject()
     {
         Intent intent = new Intent(getActivity(), ProjectCreateActivity.class);
         if (workspace == null)
-            intent.putExtra("idWorkspace", 1);
+            intent.putExtra("idWorkspace", workspaces.get(0).getId());
         else
             intent.putExtra("idWorkspace", workspace.getId());
         startActivity(intent);
@@ -142,14 +258,14 @@ public class ProjectFragment extends Fragment {
         this.pos = pos;
         tvWorkspace.setText(workspacesName[pos]);
         if (pos == 0) {
-            projects = realm.where(Project.class).findAll().sort("id");
+            projects = projectController.getProjects();
             workspace = null;
-            idWorkspace = -1;
+            idWorkspace = "all";
         }
         else {
             workspace = workspaces.get(pos - 1);
             idWorkspace = workspace.getId();
-            projects = realm.where(Project.class).equalTo("workspace.id", workspace.getId()).findAll();
+            projects = projectController.getProjectsOfWs(idWorkspace);
         }
 
         projectAdapter.setProjects(projects);
@@ -159,7 +275,6 @@ public class ProjectFragment extends Fragment {
     }
 
     private void createWorkspace() {
-
         final View v = (LinearLayout) getActivity().getLayoutInflater().inflate(R.layout.dialog_workspace_create, null);
         final TextView tvName = (TextView) v.findViewById(R.id.tvName);
         final TextView tvDesc = (TextView) v.findViewById(R.id.tvDescription);
@@ -193,25 +308,46 @@ public class ProjectFragment extends Fragment {
                             tvName.setError("Name can't be empty!");
                             return;
                         }
+                        progressBar.setVisibility(View.VISIBLE);
 
-                        realm.beginTransaction();
-                        Workspace workspace = realm.createObject(Workspace.class);
-                        workspace.setName(name);
-                        workspace.setDescription(description);
-                        workspace.setId(realm.where(Workspace.class).max("id").intValue() + 1);
-                        realm.commitTransaction();
+                        final WorkspaceInput workspace = WorkspaceInput.builder()
+                                .ownerId(ownerID)
+                                .name(name)
+                                .description(description)
+                                .build();
 
-                        workspaces = realm.where(Workspace.class).findAll().sort("id");
-                        workspacesName = new String[workspaces.size() + 1];
-                        createWorkspaces(workspaces);
-                        loadProjects(workspaces.size());
+                        Rx2Apollo.from(client.mutate(new CreateWorkspace(workspace)))
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .subscribeWith(new DisposableObserver<Response<CreateWorkspace.Data>>() {
+                                    @Override
+                                    public void onNext(Response<CreateWorkspace.Data> dataResponse) {
+                                        if (dataResponse.errors().isEmpty())
+                                            workspaceController.createWorkspace(dataResponse.data().createWorkspace(),
+                                                    workspace);
+                                        Log.d("myLog", "createWorkspace-data:" + dataResponse.data());
+                                        Log.d("myLog", "createWorkspace-error:" + dataResponse.errors());
+                                    }
 
+                                    @Override
+                                    public void onError(Throwable e) {
+                                        e.printStackTrace();
+                                        progressBar.setVisibility(View.GONE);
+                                    }
+
+                                    @Override
+                                    public void onComplete() {
+                                        progressBar.setVisibility(View.GONE);
+                                        workspacesName = new String[workspaces.size() + 1];
+                                        createListWorkspaces(workspaces);
+                                        loadProjects(workspaces.size());
+                                    }
+                                });
                         alert.dismiss();
                     }
                 });
+
             }
         });
-
         alert.show();
     }
 
@@ -237,7 +373,7 @@ public class ProjectFragment extends Fragment {
             return true;
         }
 
-        if (idWorkspace == -1 || idWorkspace == 1)
+        if (idWorkspace.equals("all") || idWorkspace.equals(workspaces.get(0).getId()))
         {
             Toast.makeText(getContext(), "Select a workspace", Toast.LENGTH_SHORT).show();
             return false;
@@ -255,7 +391,7 @@ public class ProjectFragment extends Fragment {
 
     @Override
     public void onResume() {
-        createWorkspaces(realm.where(Workspace.class).findAll().sort("id"));
+        createListWorkspaces(workspaceController.getWorkspaces());
         if (pos != 0)
             tvWorkspace.setText(workspacesName[pos]);
         projectAdapter.notifyDataSetChanged();

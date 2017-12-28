@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.Chronometer;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -17,6 +18,7 @@ import com.tpu.mobile.timetracker.R;
  */
 
 public class TaskViewHolder extends RecyclerView.ViewHolder{
+    public ProgressBar progressBar;
     public RelativeLayout baseLayout;
     public RelativeLayout layoutClickable;
     public RelativeLayout frontLayout;
@@ -30,6 +32,7 @@ public class TaskViewHolder extends RecyclerView.ViewHolder{
     public TaskViewHolder(View view) {
         super(view);
         baseLayout = (RelativeLayout) view.findViewById(R.id.baseLayout);
+        progressBar = (ProgressBar) view.findViewById(R.id.progressBar);
         layoutClickable = (RelativeLayout) view.findViewById(R.id.layoutClickable);
         frontLayout = (RelativeLayout) view.findViewById(R.id.frontLayout);
         imageIndicator = (ImageView)view.findViewById(R.id.imageIndicator);

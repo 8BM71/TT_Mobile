@@ -26,13 +26,11 @@ import com.tpu.mobile.timetracker.Database.Model.Project;
 import com.tpu.mobile.timetracker.Database.Model.Task;
 import com.tpu.mobile.timetracker.Database.Model.User;
 import com.tpu.mobile.timetracker.Database.Model.Workspace;
-import com.tpu.mobile.timetracker.Project.ProjectActivity;
 import com.tpu.mobile.timetracker.Project.ProjectCreateActivity;
 import com.tpu.mobile.timetracker.Project.ProjectEditActivity;
 import com.tpu.mobile.timetracker.R;
 import com.tpu.mobile.timetracker.Task.ItemTaskTouchHelper.ItemTaskTouchHelper;
 import com.tpu.mobile.timetracker.User.UserActivity;
-import com.tpu.mobile.timetracker.Workspace.WorkspaceActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +55,7 @@ public class TaskActivity extends AppCompatActivity
     String[] projectsName;
     int[] projectsColor;
     int pos = 0;
-    int idProject;
+    String idProject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,8 +89,8 @@ public class TaskActivity extends AppCompatActivity
         projects = realm.where(Project.class).findAll().sort("id");
         if (projects.size() == 0) initProject();
 
-        idProject = getIntent().getIntExtra("projectID", -1);
-        if (idProject == -1)
+        idProject = getIntent().getStringExtra("projectID");
+        if (idProject == "-1")
             tasks = realm.where(Task.class).findAllSorted("timeCreated", Sort.DESCENDING);
         else {
             project = realm.where(Project.class).equalTo("id", idProject).findFirst();
@@ -103,7 +101,7 @@ public class TaskActivity extends AppCompatActivity
         if (tasks.size() != 0)
             models = setData(tasks);
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
-        taskAdapter = new TaskRecyclerViewAdapter(this, models, tasks, project, realm);
+        //taskAdapter = new TaskRecyclerViewAdapter(this, models, tasks, project, realm);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(taskAdapter);
         ItemTouchHelper.Callback callback = new ItemTaskTouchHelper(taskAdapter);
@@ -114,7 +112,7 @@ public class TaskActivity extends AppCompatActivity
         createProjects(projects);
 
         tvProject = (TextView) findViewById(R.id.tvProject);
-        if (idProject == -1)
+        if (idProject == "-1")
             tvProject.setText(projectsName[0]);
         else
             tvProject.setText(project.getName());
@@ -146,7 +144,7 @@ public class TaskActivity extends AppCompatActivity
         Workspace workspace = new Workspace();
         workspace.setName("No workspace");
         workspace.setDescription("No description");
-        workspace.setId(1);
+        //workspace.setId(1);
         realm.beginTransaction();
         realm.copyToRealm(workspace);
         realm.commitTransaction();
@@ -154,7 +152,7 @@ public class TaskActivity extends AppCompatActivity
         Project project = new Project();
         project.setName("No project");
         project.setDescription("No description");
-        project.setId(1);
+        project.setId("1");
         project.setColor(Color.LTGRAY);
         project.setWorkspace(realm.where(Workspace.class).findFirst());
         project.setStart(System.currentTimeMillis());
@@ -186,7 +184,7 @@ public class TaskActivity extends AppCompatActivity
         if (pos == 0) {
             tasks = realm.where(Task.class).findAllSorted("timeCreated", Sort.DESCENDING);
             project = null;
-            idProject = -1;
+            idProject = "-1";
         }
         else {
             project = projects.get(pos - 1);
@@ -232,7 +230,7 @@ public class TaskActivity extends AppCompatActivity
                                 taskModel.setTimeCreated(System.currentTimeMillis());
                                 taskModel.setState(Task.TASK_CREATED);
                                 taskModel.setDuration(0);
-                                taskModel.setId(realm.where(Task.class).max("id").intValue() + 1);
+                                //taskModel.setId(realm.where(Task.class).max("id").intValue() + 1);
                                 if (project == null)
                                     taskModel.setProject(realm.where(Project.class).equalTo("id", 1).findFirst());
                                 else
@@ -278,7 +276,7 @@ public class TaskActivity extends AppCompatActivity
             return true;
         }
 
-        if (idProject == -1 || idProject == 1)
+        if (idProject == "-1" || idProject == "1")
         {
             Toast.makeText(this, "Select a project", Toast.LENGTH_SHORT).show();
             return false;
@@ -338,11 +336,6 @@ public class TaskActivity extends AppCompatActivity
         if (id == R.id.nav_task)
             return;
 
-        if (id == R.id.nav_workspace)
-            intent = new Intent(this, WorkspaceActivity.class);
-
-        if (id == R.id.nav_project)
-            intent = new Intent(this, ProjectActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
         startActivity(intent);
         //overridePendingTransition(0,0);

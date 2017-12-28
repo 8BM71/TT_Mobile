@@ -8,8 +8,11 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.tpu.mobile.timetracker.Database.Controller.ProjectController;
+import com.tpu.mobile.timetracker.Database.Controller.TaskController;
 import com.tpu.mobile.timetracker.Database.Model.Project;
 import com.tpu.mobile.timetracker.Database.Model.Task;
+import com.tpu.mobile.timetracker.MainApplication;
 import com.tpu.mobile.timetracker.R;
 
 import java.text.SimpleDateFormat;
@@ -29,6 +32,8 @@ public class PageMain extends Fragment {
     TextView tvNumber;
     TextView tvStart, tvEnd;
     Realm realm;
+    ProjectController projectController;
+    TaskController taskController;
     Project project;
     RealmResults<Task> tasks;
 
@@ -48,14 +53,12 @@ public class PageMain extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.project_page_info, container, false);
-
-        Realm.init(this.getContext());
-        realm = Realm.getDefaultInstance();
-        int idProject = getActivity().getIntent().getIntExtra("projectID", 0);
-        project = realm.where(Project.class).equalTo("id", idProject).findFirst();
-        tasks = realm.where(Task.class).equalTo("project.id", project.getId())
-                .findAllSorted("timeCreated", Sort.DESCENDING);
-
+        realm = ((MainApplication)getActivity().getApplication()).getRealm();
+        projectController = new ProjectController(realm);
+        taskController = new TaskController(realm);
+        String idProject = getActivity().getIntent().getStringExtra("projectID");
+        project = projectController.getProject(idProject);
+        tasks = taskController.getTasksOfProject(idProject);
         layout = (LinearLayout) view.findViewById(R.id.layoutDescription);
         etName = (TextView) view.findViewById(R.id.etName);
         etWorkspace = (TextView) view.findViewById(R.id.etWorkspace);
@@ -67,7 +70,7 @@ public class PageMain extends Fragment {
         etName.setText(project.getName());
         
         String description = project.getDescription();
-        if (!description.isEmpty()) {
+        if (description != null && !description.isEmpty()) {
             layout.setVisibility(View.VISIBLE);
             etDescription.setText(project.getDescription());
 

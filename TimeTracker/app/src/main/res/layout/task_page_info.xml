@@ -17,6 +17,7 @@
             android:layout_margin="5dp"
             android:orientation="vertical">
 
+
             <LinearLayout
                 android:id="@+id/layoutMain"
                 android:layout_width="match_parent"
@@ -80,13 +81,14 @@
                         app:fabSize="mini"
                         app:srcCompat="@drawable/ic_arrow_forward_white" />-->
                 </LinearLayout>
-
+<!--111111111111111111111111111111111111111111111111111111-->
                 <RelativeLayout
                     android:id="@+id/layoutAuto"
                     android:layout_width="match_parent"
                     android:layout_height="60dp"
                     android:layout_marginTop="10dp"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:visibility="gone">
 
                     <ImageView
                         android:id="@+id/imageIndicator"

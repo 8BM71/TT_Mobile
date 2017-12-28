@@ -7,29 +7,21 @@ import io.realm.RealmObject;
  */
 
 public class User extends RealmObject {
-    public int id;
-    public String idToken;
+    public String id;
     public String name;
+    public String username;
     public String email;
     public String photo;
 
     public User() {
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
-    }
-
-    public String getIdToken() {
-        return idToken;
-    }
-
-    public void setIdToken(String idToken) {
-        this.idToken = idToken;
     }
 
     public String getName() {
@@ -38,6 +30,14 @@ public class User extends RealmObject {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getEmail() {

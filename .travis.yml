@@ -52,7 +52,7 @@ script:
   #Assembles all Debug builds (builds apk).
   - ./gradlew assembleDebug
   #Runs all device checks on currently connected devices (instrumentation tests + UI)
-  - ./gradlew connectedCheck --stacktrace 
+  #- ./gradlew connectedCheck 
 before_deploy:
   - cd app/build/outputs/apk
   - mv app-debug.apk TimeTracker.apk

@@ -8,14 +8,20 @@ import io.realm.RealmObject;
  */
 
 public class Workspace extends RealmObject {
-    public int id;
-
+    public String id;
     public String name;
     public String description;
-    public RealmList<Project> projects;
-
+    public Long createDate;
 
     public Workspace() {
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -34,20 +40,15 @@ public class Workspace extends RealmObject {
         this.description = description;
     }
 
-    public int getId() {
-        return id;
+    public Long getCreateDate() {
+        return createDate;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setCreateDate(String createDate) {
+        this.createDate = Long.parseLong(createDate);
     }
 
-    public RealmList<Project> getProjects() {
-        return projects;
+    public void setCreateDate(Long createDate) {
+        this.createDate = createDate;
     }
-
-    public void setProjects(RealmList<Project> projects) {
-        this.projects = projects;
-    }
-
 }

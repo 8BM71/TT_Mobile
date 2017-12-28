@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.apollographql.apollo.ApolloClient;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -25,6 +26,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.tpu.mobile.timetracker.Database.Model.User;
+import com.tpu.mobile.timetracker.MainApplication;
 import com.tpu.mobile.timetracker.R;
 import com.tpu.mobile.timetracker.User.UserActivity;
 
@@ -33,11 +35,12 @@ import jp.wasabeef.glide.transformations.CropCircleTransformation;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-
+    ApolloClient client;
+    Realm realm;
     GoogleSignInAccount account;
     GoogleSignInClient mGoogleSignInClient;
     GoogleSignInOptions gso;
-    Realm realm;
+    String ownerID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,19 +52,14 @@ public class MainActivity extends AppCompatActivity
         TextView tvName = (TextView)header.findViewById(R.id.tvName);
         TextView tvEmail = (TextView)header.findViewById(R.id.tvMail);
         ImageView photo = (ImageView)header.findViewById(R.id.imagePhoto);
-        Realm.init(this);
-        realm = Realm.getDefaultInstance();
+        client = ((MainApplication)getApplication()).getApolloClient();
+        realm = ((MainApplication)getApplication()).getRealm();
         account = GoogleSignIn.getLastSignedInAccount(this);
-        User user = realm.where(User.class).equalTo("id", 0).findFirst();
-        Log.d("myLog", "size = " + user.getIdToken().length() + "; idToken" + user.getIdToken());
-        Log.d("myLog", "id = " + user.getId());
-        //tvName.setText(account.getDisplayName());
-        //tvEmail.setText(account.getEmail());
-        tvName.setText(user.getName());
-        tvEmail.setText(user.getEmail());
+        ownerID = ((MainApplication)getApplication()).getPreferences().getString("idOwner", "0");
+        tvName.setText(account.getDisplayName());
+        tvEmail.setText(account.getEmail());
         Glide.with(this)
-                .load(Uri.parse(user.getPhoto()))
-                //.load(account.getPhotoUrl())
+                .load(account.getPhotoUrl())
                 .asBitmap()
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .skipMemoryCache(false)
@@ -119,13 +117,13 @@ public class MainActivity extends AppCompatActivity
         Fragment fragment = null;
         switch (itemId) {
             case R.id.nav_workspace:
-                fragment = new WorkspaceFragment();
+                fragment = new WorkspaceFragment(ownerID);
                 break;
             case R.id.nav_project:
-                fragment = new ProjectFragment();
+                fragment = new ProjectFragment(ownerID);
                 break;
             case R.id.nav_task:
-                fragment = new TaskFragment();
+                fragment = new TaskFragment(ownerID);
                 break;
             case R.id.nav_logout:
                 mGoogleSignInClient.signOut()

@@ -13,6 +13,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -20,12 +21,21 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.apollographql.apollo.ApolloCall;
+import com.apollographql.apollo.ApolloClient;
+import com.apollographql.apollo.api.Response;
+import com.apollographql.apollo.rx2.Rx2Apollo;
+import com.tpu.mobile.timetracker.Database.Controller.ProjectController;
+import com.tpu.mobile.timetracker.Database.Controller.TaskController;
+import com.tpu.mobile.timetracker.Database.Controller.WorkspaceController;
 import com.tpu.mobile.timetracker.Database.Model.Project;
 import com.tpu.mobile.timetracker.Database.Model.Task;
 import com.tpu.mobile.timetracker.Database.Model.Workspace;
+import com.tpu.mobile.timetracker.MainApplication;
 import com.tpu.mobile.timetracker.Project.ProjectCreateActivity;
 import com.tpu.mobile.timetracker.Project.ProjectEditActivity;
 import com.tpu.mobile.timetracker.R;
@@ -37,32 +47,49 @@ import com.tpu.mobile.timetracker.Task.TaskRecyclerViewAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
+import api.CreateTask;
+import api.CreateWorkspace;
+import api.GetProjects;
+import api.GetTasks;
+import api.GetWorkspaces;
+import api.type.TaskInput;
+import api.type.WorkspaceInput;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.observers.DisposableObserver;
 import io.realm.Realm;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
 public class TaskFragment extends Fragment {
-
+    ApolloClient client;
     Realm realm;
+    WorkspaceController workspaceController;
+    ProjectController projectController;
+    TaskController taskController;
     RealmResults<Task> tasks;
     RealmResults<Project> projects;
+    String ownerID;
     RecyclerView recyclerView;
+    ProgressBar progressBar;
     TaskRecyclerViewAdapter taskAdapter;
     ItemTouchHelper touchHelper;
     TextView tvProject;
     Project project;
     List<ModelTask> models;
-
     String[] projectsName;
     int[] projectsColor;
     int pos = 0;
-    int idProject;
+    String idProject;
+
+    public TaskFragment(String ownerID)
+    {
+        this.ownerID = ownerID;
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         View view = inflater.inflate(R.layout.xxx_task_app_bar_main, container, false);
-
         Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
         ((MainActivity)getActivity()).setSupportActionBar(toolbar);
         ((MainActivity)getActivity()).getSupportActionBar().setDisplayShowTitleEnabled(false);
@@ -71,9 +98,6 @@ public class TaskFragment extends Fragment {
                 getActivity(), drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
-
-
-
         FloatingActionButton fab = (FloatingActionButton) view.findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -81,23 +105,32 @@ public class TaskFragment extends Fragment {
                 createTask();
             }
         });
-        Realm.init(getContext());
-        realm = Realm.getDefaultInstance();
-        projects = realm.where(Project.class).findAll().sort("id");
-        if (projects.size() == 0) initProject();
-        idProject = getActivity().getIntent().getIntExtra("projectID", -1);
-        if (idProject == -1)
-            tasks = realm.where(Task.class).findAllSorted("timeCreated", Sort.DESCENDING);
-        else {
-            project = realm.where(Project.class).equalTo("id", idProject).findFirst();
-            tasks = realm.where(Task.class).equalTo("project.id", project.getId())
-                    .findAllSorted("timeCreated", Sort.DESCENDING);
-        }
+        recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
+        progressBar = (ProgressBar) view.findViewById(R.id.progressBar);
 
+        client = ((MainApplication)getActivity().getApplication()).getApolloClient();
+        realm = ((MainApplication)getActivity().getApplication()).getRealm();
+        workspaceController = new WorkspaceController(realm);
+        projectController = new ProjectController(realm);
+        taskController = new TaskController(realm);
+        checkWorkspaces();
+        //checkProjects();
+        //checkTasks();
+        idProject = getActivity().getIntent().getStringExtra("projectID");
+        projects = projectController.getProjects();
+        if (idProject == null || idProject.isEmpty()){
+            idProject = "all";
+            tasks = taskController.getTasks();
+        }
+        else {
+            if (projectController.getProject(idProject) == null)
+                idProject = projects.get(0).getId();
+            project = projectController.getProject(idProject);
+            tasks = taskController.getTasksOfProject(idProject);
+        }
         if (tasks.size() != 0)
             models = setData(tasks);
-        recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
-        taskAdapter = new TaskRecyclerViewAdapter(getContext(), models, tasks, project, realm);
+        taskAdapter = new TaskRecyclerViewAdapter(getContext(), client, realm, models, tasks, project);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
         recyclerView.setNestedScrollingEnabled(false); //Если используется совместно с ScrollView
         recyclerView.setAdapter(taskAdapter);
@@ -106,10 +139,9 @@ public class TaskFragment extends Fragment {
         touchHelper.attachToRecyclerView(recyclerView);
         if (models != null)
             recyclerView.setItemViewCacheSize(models.size());
-        createProjects(projects);
-
+        createListProjects(projects);
         tvProject = (TextView) view.findViewById(R.id.tvProject);
-        if (idProject == -1)
+        if (idProject.equals("all"))
             tvProject.setText(projectsName[0]);
         else
             tvProject.setText(project.getName());
@@ -119,17 +151,158 @@ public class TaskFragment extends Fragment {
                 showProjectDialog();
             }
         });
-
         return view;
     }
 
-    private void createProjects(RealmResults<Project> projects)
+    private void checkWorkspaces()
     {
+        if (workspaceController.getWorkspaces().size() == 0)
+            loadWorkspaces();
+    }
+
+    private void loadWorkspaces()
+    {
+        progressBar.setVisibility(View.VISIBLE);
+        ApolloCall<GetWorkspaces.Data> response = client.query(new GetWorkspaces(ownerID));
+        Rx2Apollo.from(response)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<GetWorkspaces.Data>>() {
+                    @Override
+                    public void onNext(Response<GetWorkspaces.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty())
+                            workspaceController.createWorkspaces(dataResponse.data().workspaces());
+                        Log.d("myLog", "getWs-data:" + dataResponse.data());
+                        Log.d("myLog", "getWs-error:" + dataResponse.errors());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                        progressBar.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        progressBar.setVisibility(View.GONE);
+                        checkProjects();
+                    }
+                });
+    }
+
+    private void checkProjects()
+    {
+        if (projectController.getProjects().size() != 0)
+            projects = projectController.getProjects();
+        else
+            loadProjects();
+    }
+
+    private void loadProjects()
+    {
+        progressBar.setVisibility(View.VISIBLE);
+        ApolloCall<GetProjects.Data> response = client.query(new GetProjects(ownerID));
+        Rx2Apollo.from(response)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<GetProjects.Data>>() {
+                    @Override
+                    public void onNext(Response<GetProjects.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty()) {
+                            List<GetProjects.Project> prjs = new ArrayList<GetProjects.Project>();
+                            List<String> ids = new ArrayList<String>();
+                            for (int i = 0; i < dataResponse.data().workspaces().size(); i++) {
+                                for (int j = 0; j < dataResponse.data().workspaces().get(i).projects().size(); j++) {
+                                    prjs.add(dataResponse.data().workspaces().get(i).projects().get(j));
+                                    ids.add(dataResponse.data().workspaces().get(i).id());
+                                }
+                            }
+                            projects = projectController.createProjects(prjs, ids);
+                            Log.d("myLog", "getProjects-data:" + dataResponse.data());
+                            Log.d("myLog", "getProjects-error:" + dataResponse.errors());
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                        progressBar.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        progressBar.setVisibility(View.GONE);
+                        createListProjects(projectController.getProjects());
+                        checkTasks();
+                    }
+                });
+    }
+
+    private void checkTasks()
+    {
+        if (taskController.getTasks().size() != 0)
+            tasks = taskController.getTasks();
+        else
+            loadTasks();
+    }
+
+    private void loadTasks()
+    {
+        progressBar.setVisibility(View.VISIBLE);
+        ApolloCall<GetTasks.Data> response = client.query(new GetTasks(ownerID));
+        Rx2Apollo.from(response)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<GetTasks.Data>>() {
+                    @Override
+                    public void onNext(Response<GetTasks.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty()) {
+                            List<GetTasks.Task> tsks = new ArrayList<GetTasks.Task>();
+                            List<String> ids = new ArrayList<String>();
+                            Log.d("myLog", "getTasks-data:" + dataResponse.data());
+                            Log.d("myLog", "getTasks-error:" + dataResponse.errors());
+                            for (int i = 0; i < dataResponse.data().workspaces().size(); i++) {
+                                for (int j = 0; j < dataResponse.data().workspaces().get(i).projects().size(); j++) {
+                                    for (int k = 0; k < dataResponse.data().workspaces().get(i).projects().get(j).tasks().size(); k++)
+                                    {
+                                        tsks.add(dataResponse.data().workspaces().get(i).projects().get(j).tasks().get(k));
+                                        ids.add(dataResponse.data().workspaces().get(i).projects().get(j).id());
+                                    }
+                                }
+                            }
+                            tasks = taskController.createTasks(tsks, ids);
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                        progressBar.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        progressBar.setVisibility(View.GONE);
+                        if (models != null)
+                            models.clear();
+                        models = setData(tasks);
+                        //recyclerView.setItemViewCacheSize(models.size());
+                        taskAdapter.setModels(models);
+                        taskAdapter.notifyDataSetChanged();
+                    }
+                });
+    }
+
+
+
+    private void createListProjects(RealmResults<Project> projects)
+    {
+        if (projects == null)
+        {
+            projectsName = new String[]{"All tasks"};
+            return;
+        }
         projectsName = new String[projects.size() + 1];
         projectsName[0] = "All tasks";
         projectsColor = new int[projects.size() + 1];
         projectsColor[0] = Color.WHITE;
-
         for (int i = 0; i < projects.size(); i++)
         {
             projectsName[i + 1] = projects.get(i).getName();
@@ -137,27 +310,7 @@ public class TaskFragment extends Fragment {
         }
     }
 
-    private void initProject()
-    {
-        Workspace workspace = new Workspace();
-        workspace.setName("No workspace");
-        workspace.setDescription("No description");
-        workspace.setId(1);
-        realm.beginTransaction();
-        realm.copyToRealm(workspace);
-        realm.commitTransaction();
 
-        Project project = new Project();
-        project.setName("No project");
-        project.setDescription("No description");
-        project.setId(1);
-        project.setColor(Color.LTGRAY);
-        project.setWorkspace(realm.where(Workspace.class).findFirst());
-        project.setStart(System.currentTimeMillis());
-        realm.beginTransaction();
-        realm.copyToRealm(project);
-        realm.commitTransaction();
-    }
 
     private void showProjectDialog()
     {
@@ -180,15 +333,14 @@ public class TaskFragment extends Fragment {
         this.pos = pos;
         tvProject.setText(projectsName[pos]);
         if (pos == 0) {
-            tasks = realm.where(Task.class).findAllSorted("timeCreated", Sort.DESCENDING);
+            tasks = taskController.getTasks();
             project = null;
-            idProject = -1;
+            idProject = "all";
         }
         else {
             project = projects.get(pos - 1);
             idProject = project.getId();
-            tasks = realm.where(Task.class).equalTo("project.id", project.getId())
-                    .findAllSorted("timeCreated", Sort.DESCENDING);
+            tasks = taskController.getTasksOfProject(idProject);
         }
 
         if (models != null)
@@ -214,33 +366,52 @@ public class TaskFragment extends Fragment {
                                 TextView tvName = (TextView) v.findViewById(R.id.tvNameTask);
                                 TextView tvDesc = (TextView) v.findViewById(R.id.tvDescriptionTask);
                                 String name = tvName.getText().toString();
-                                String description = tvDesc.getText().toString();
-
+                                final String description = tvDesc.getText().toString();
+                                final String idPrj;
                                 if (name.isEmpty() && project == null)
-                                    name = "Task: " + realm.where(Project.class).equalTo("id", 1).findFirst().getName();
+                                    name = "Task: " + projectController.getProject(projects.get(0).getId()).getName();
                                 if (name.isEmpty())
                                     name = "Task: " + project.getName();
-
-                                realm.beginTransaction();
-                                Task taskModel = realm.createObject(Task.class);
-                                taskModel.setName(name);
-                                taskModel.setDescription(description);
-                                taskModel.setTimeCreated(System.currentTimeMillis());
-                                taskModel.setState(Task.TASK_CREATED);
-                                taskModel.setDuration(0);
-                                taskModel.setId(realm.where(Task.class).max("id").intValue() + 1);
+                                final String nameTask = name;
                                 if (project == null)
-                                    taskModel.setProject(realm.where(Project.class).equalTo("id", 1).findFirst());
+                                    idPrj = projects.get(0).getId();
                                 else
-                                    taskModel.setProject(realm.where(Project.class).equalTo("id", project.getId()).findFirst());
-                                realm.commitTransaction();
+                                    idPrj = project.getId();
+                                progressBar.setVisibility(View.VISIBLE);
+                                final TaskInput task = TaskInput.builder()
+                                        .name(name)
+                                        .description(description)
+                                        .projectId(idPrj)
+                                        .build();
+                                Rx2Apollo.from(client.mutate(new CreateTask(idPrj, task)))
+                                        .observeOn(AndroidSchedulers.mainThread())
+                                        .subscribeWith(new DisposableObserver<Response<CreateTask.Data>>() {
+                                            @Override
+                                            public void onNext(Response<CreateTask.Data> dataResponse) {
+                                                if (dataResponse.errors().isEmpty())
+                                                    taskController.createTask(dataResponse.data().createTask(), nameTask, description,
+                                                            idPrj);
+                                                Log.d("myLog", "createTask-data:" + dataResponse.data());
+                                                Log.d("myLog", "createTask-error:" + dataResponse.errors());
+                                            }
 
-                                if (models != null)
-                                    models.clear();
-                                models = setData(tasks);
-                                recyclerView.setItemViewCacheSize(models.size());
-                                taskAdapter.setModels(models);
-                                taskAdapter.notifyDataSetChanged();
+                                            @Override
+                                            public void onError(Throwable e) {
+                                                e.printStackTrace();
+                                                progressBar.setVisibility(View.GONE);
+                                            }
+
+                                            @Override
+                                            public void onComplete() {
+                                                progressBar.setVisibility(View.GONE);
+                                                if (models != null)
+                                                    models.clear();
+                                                models = setData(tasks);
+                                                recyclerView.setItemViewCacheSize(models.size());
+                                                taskAdapter.setModels(models);
+                                                taskAdapter.notifyDataSetChanged();
+                                            }
+                                        });
                             }
                         });
         builder.setView(v);
@@ -249,12 +420,9 @@ public class TaskFragment extends Fragment {
     }
 
 
-
-
-
     public static List<ModelTask> setData(List<Task> tasks)
     {
-        long day = 3600000; //Пока час для тестирования
+        long day = 3600000; //Пока час
         List<ModelTask> models = new ArrayList<ModelTask>();
         Task task;
         if (tasks.size() != 0)
@@ -264,8 +432,6 @@ public class TaskFragment extends Fragment {
 
         long time = task.getTimeCreated() / day;
         models.add(new ModelTask(time));
-        //models.add(new ModelTask(task));
-
         for (Task t : tasks)
         {
             long d = t.getTimeCreated() / day;
@@ -303,11 +469,12 @@ public class TaskFragment extends Fragment {
             return true;
         }
 
-        if (idProject == -1 || idProject == 1)
+        if (idProject.equals("all") || idProject.equals(projects.get(0).getId()))
         {
             Toast.makeText(getContext(), "Select a project", Toast.LENGTH_SHORT).show();
             return false;
         }
+
 
         if (id == R.id.actionEdit) {
             Intent intent = new Intent(getActivity(), ProjectEditActivity.class);
@@ -321,7 +488,7 @@ public class TaskFragment extends Fragment {
 
     @Override
     public void onResume() {
-        createProjects(realm.where(Project.class).findAll().sort("id"));
+        createListProjects(projectController.getProjects());
         if (pos != 0)
             tvProject.setText(projectsName[pos]);
         taskAdapter.notifyDataSetChanged();

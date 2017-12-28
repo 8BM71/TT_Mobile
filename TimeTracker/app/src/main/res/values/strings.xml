@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">TimeTracker</string>
     <string name="server_client_id">68255243973-9h8rb8mq10kq00a2830eetktipe1miab.apps.googleusercontent.com</string>
+    <string name="server_url">https://tttpu.tk/graphql</string>
+    <!--Authorization-->
+    <string name="authorization_hint">Select the Google Account</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>

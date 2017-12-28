@@ -98,7 +98,8 @@
         android:layout_marginTop="6dp"
         android:text="Note (200):"
         android:textSize="16sp"
-        android:imeOptions="flagNoEnterAction"/>
+        android:imeOptions="flagNoEnterAction"
+        android:visibility="gone"/>
 
 
     <com.tpu.mobile.timetracker.CustomViews.MyEditText
@@ -113,6 +114,7 @@
         android:scrollbars="vertical"
         android:maxLength="200"
         android:textSize="16sp"
+        android:visibility="gone"
         />
 
 <!--    <Button

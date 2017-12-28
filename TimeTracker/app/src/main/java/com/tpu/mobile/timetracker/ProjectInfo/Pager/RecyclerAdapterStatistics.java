@@ -21,7 +21,6 @@ import io.realm.RealmList;
  */
 
 public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
     Context context;
     List<ModelTaskStat> models;
     List<Task> tasks;

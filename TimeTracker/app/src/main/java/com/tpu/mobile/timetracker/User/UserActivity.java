@@ -1,6 +1,8 @@
 package com.tpu.mobile.timetracker.User;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -8,6 +10,11 @@ import android.view.View;
 import android.widget.Chronometer;
 import android.widget.Toast;
 
+import com.apollographql.apollo.ApolloCall;
+import com.apollographql.apollo.ApolloClient;
+import com.apollographql.apollo.api.Response;
+import com.apollographql.apollo.rx2.Rx2Apollo;
+import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -15,10 +22,23 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
+import com.tpu.mobile.timetracker.Database.Controller.UserController;
 import com.tpu.mobile.timetracker.Database.Model.User;
+import com.tpu.mobile.timetracker.MainApplication;
 import com.tpu.mobile.timetracker.R;
 import com.tpu.mobile.timetracker.Main.MainActivity;
 
+import api.AuthUser;
+import api.CreateProject;
+import api.CreateUser;
+import api.CreateWorkspace;
+import api.GetWorkspace;
+import api.GetWorkspaces;
+import api.type.ProjectInput;
+import api.type.UserInput;
+import api.type.WorkspaceInput;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.observers.DisposableObserver;
 import io.realm.Realm;
 
 /**
@@ -26,38 +46,35 @@ import io.realm.Realm;
  */
 
 public class UserActivity extends AppCompatActivity implements View.OnClickListener {
-    private static final String TAG = "LogUserActivity";
+    private static final String TAG = "myLogUserActivity";
     private static final int RC_SIGN_IN = 9002;
-
+    ApolloClient client;
+    Realm realm;
+    UserController userController;
     Chronometer chronometer;
     SignInButton signInButton;
-
     GoogleSignInClient mGoogleSignInClient;
     GoogleSignInOptions gso;
-
-    Realm realm;
+    SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.autorization_activity);
-
-        Realm.init(this);
-        realm = Realm.getDefaultInstance();
-
+        client = ((MainApplication)getApplication()).getApolloClient();
+        realm = ((MainApplication)getApplication()).getRealm();
+        preferences = ((MainApplication)getApplication()).getPreferences();
+        userController = new UserController(realm);
         chronometer = (Chronometer)findViewById(R.id.chronometer);
         chronometer.start();
         signInButton = (SignInButton)findViewById(R.id.bSign);
         signInButton.setOnClickListener(this);
         validateServerClientID();
-
         gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.server_client_id))
                 .requestEmail()
                 .build();
-
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
-
     }
 
     @Override
@@ -86,7 +103,7 @@ public class UserActivity extends AppCompatActivity implements View.OnClickListe
     private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
-            loadActivity(account);
+            authUser(account);
         } catch (ApiException e) {
             Log.w(TAG, ":failed code=" + e.getStatusCode());
         }
@@ -102,22 +119,124 @@ public class UserActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void loadActivity(GoogleSignInAccount account)
+    private void authUser(GoogleSignInAccount account)
     {
-        User user = new User();
-        Log.d("myLog", "id = " + account.getId());
-        user.setId(0);
-        user.setName(account.getDisplayName());
-        user.setEmail(account.getEmail());
-        user.setIdToken(account.getIdToken());
-        user.setPhoto(account.getPhotoUrl().toString());
-        realm.beginTransaction();
-        if (realm.where(User.class).equalTo("id", 0).findFirst() != null)
-            realm.where(User.class).equalTo("id", 0).findFirst().deleteFromRealm();
-        realm.copyToRealm(user);
-        realm.commitTransaction();
-        Intent intent = new Intent(this, MainActivity.class);
-        startActivity(intent);
-        finish();
+        Rx2Apollo.from(client.mutate(new AuthUser(account.getIdToken())))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<AuthUser.Data>>() {
+                    @Override
+                    public void onNext(Response<AuthUser.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty()) {
+                            preferences.edit().putString("idOwner", dataResponse.data().auth().id()).commit();
+                            checkUser(dataResponse.data().auth().id());
+                        }
+                        Log.d(TAG, "authUser-data:" + dataResponse.data());
+                        Log.d(TAG, "authUser-error:" + dataResponse.errors());
+                    }
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+                    @Override
+                    public void onComplete() {
+                    }
+                });
+    }
+
+    private void checkUser(final String id)
+    {
+        ApolloCall<GetWorkspaces.Data> response = client.query(new GetWorkspaces(id));
+        Rx2Apollo.from(response)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<GetWorkspaces.Data>>() {
+                    @Override
+                    public void onNext(Response<GetWorkspaces.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty())
+                        {
+                            if(dataResponse.data().workspaces().size() == 0)
+                                createWorkspace(id);
+                            else
+                            {
+                                Intent intent = new Intent(UserActivity.this, MainActivity.class);
+                                startActivity(intent);
+                                finish();
+                            }
+                        }
+                        Log.d(TAG, "checkUser-data:" + dataResponse.data());
+                        Log.d(TAG, "checkUser-error:" + dataResponse.errors());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                    }
+                });
+    }
+
+    private void createWorkspace(String id) {
+        WorkspaceInput workspace = WorkspaceInput.builder()
+                .ownerId(id)
+                .name("No workspace")
+                .description("No description")
+                .build();
+
+        Rx2Apollo.from(client.mutate(new CreateWorkspace(workspace)))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<CreateWorkspace.Data>>() {
+                    @Override
+                    public void onNext(Response<CreateWorkspace.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty()) {
+                            preferences.edit().putString("idDefWorkspace", dataResponse.data().createWorkspace()).commit();
+                            createProject(dataResponse.data().createWorkspace());
+                        }
+                        Log.d(TAG, "createDefWS-data:" + dataResponse.data());
+                        Log.d(TAG, "createDefWS-error:" + dataResponse.errors());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                    }
+                });
+    }
+
+    private void createProject(String id)
+    {
+        ProjectInput project = ProjectInput.builder()
+                .name("No project")
+                .color(Color.GRAY)
+                .build();
+
+        Rx2Apollo.from(client.mutate(new CreateProject(id, project)))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<CreateProject.Data>>() {
+                    @Override
+                    public void onNext(Response<CreateProject.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty())
+                            preferences.edit().putString("idDefProject", dataResponse.data().createProject()).commit();
+                        Log.d(TAG, "createDefProject-data:" + dataResponse.data());
+                        Log.d(TAG, "createDefProject-error:" + dataResponse.errors());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Intent intent = new Intent(UserActivity.this, MainActivity.class);
+                        startActivity(intent);
+                        finish();
+                    }
+                });
     }
 }

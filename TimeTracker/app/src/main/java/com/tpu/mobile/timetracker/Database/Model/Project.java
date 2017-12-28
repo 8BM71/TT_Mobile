@@ -7,26 +7,24 @@ import io.realm.RealmObject;
  */
 
 public class Project extends RealmObject {
-    public int id;
-
+    public String id;
     public String name;
     public String description;
-
     public long duration;
     public long start;
     public long end;
-
     public int color;
     public Workspace workspace;
+    public String idWorkspace;
 
     public Project() {
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -62,6 +60,10 @@ public class Project extends RealmObject {
         this.start = start;
     }
 
+    public void setStart(String start) {
+        this.start = Long.parseLong(start);
+    }
+
     public long getEnd() {
         return end;
     }
@@ -84,5 +86,13 @@ public class Project extends RealmObject {
 
     public void setWorkspace(Workspace workspace) {
         this.workspace = workspace;
+    }
+
+    public String getIdWorkspace() {
+        return idWorkspace;
+    }
+
+    public void setIdWorkspace(String idWorkspace) {
+        this.idWorkspace = idWorkspace;
     }
 }

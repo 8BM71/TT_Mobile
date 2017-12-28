@@ -8,29 +8,42 @@ import io.realm.RealmObject;
  */
 
 public class Task extends RealmObject {
-    public int id;
-
+    public String id;
     public String name;
     public String description;
-
     public long timeCreated;
     public long timeStart;
     public long timeFinish;
-
     public static final int TASK_CREATED = 0;
     public static final int TASK_RUNNING = 1;
     public static final int TASK_STOPPED = 2;
-
     public int state;
     public long duration;
-
-    public RealmList<StatisticsTask> statistics;
+    public RealmList<StatisticsTask> stats;
+    public String idActiveStat;
     public Project project;
-
+    public String idProject;
     public Task()
     {
         state = TASK_CREATED;
         duration = 0;
+        stats = new RealmList<StatisticsTask>();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getIdProject() {
+        return idProject;
+    }
+
+    public void setIdProject(String idProject) {
+        this.idProject = idProject;
     }
 
     public String getName()
@@ -67,6 +80,10 @@ public class Task extends RealmObject {
         this.timeCreated = timeCreated;
     }
 
+    public void setTimeCreated(String timeCreated) {
+        this.timeCreated = Long.parseLong(timeCreated);
+    }
+
     public long getTimeStart() {
         long currentTime = System.currentTimeMillis();
         long step = currentTime - timeStart;
@@ -78,12 +95,20 @@ public class Task extends RealmObject {
         this.timeStart = timeStart;
     }
 
+    public void setTimeStart(String timeStart) {
+        this.timeStart = Long.parseLong(timeStart);
+    }
+
     public long getTimeFinish() {
         return timeFinish;
     }
 
     public void setTimeFinish(long timeFinish) {
         this.timeFinish = timeFinish;
+    }
+
+    public void setTimeFinish(String timeFinish) {
+        this.timeFinish = Long.parseLong(timeFinish);
     }
 
     public long getDuration() {
@@ -95,19 +120,11 @@ public class Task extends RealmObject {
     }
 
     public RealmList<StatisticsTask> getStatistics() {
-        return statistics;
+        return stats;
     }
 
     public void setStatistics(RealmList<StatisticsTask> statistics) {
-        this.statistics = statistics;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
+        this.stats = statistics;
     }
 
     public Project getProject() {
@@ -118,16 +135,21 @@ public class Task extends RealmObject {
         this.project = project;
     }
 
+    public String getIdActiveStat() {
+        return idActiveStat;
+    }
+
+    public void setIdActiveStat(String idActiveStat) {
+        this.idActiveStat = idActiveStat;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Task)) return false;
 
         Task task = (Task) obj;
-        return this.getId() == task.getId() &&
+        return this.getId().equals(task.getId()) &&
                 this.getName().equals(task.getName()) &&
-                this.getDescription().equals(task.getDescription()) &&
-                this.getTimeCreated() == task.getTimeCreated() &&
-                this.getTimeStart() == task.getTimeStart() &&
-                this.getTimeFinish() == task.getTimeFinish();
+                this.getDescription().equals(task.getDescription());
     }
 }

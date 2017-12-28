@@ -61,8 +61,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/appBar">
-
         <include layout="@layout/content_main" />
+        <ProgressBar
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/progressBar"
+            android:visibility="gone"/>
     </RelativeLayout>
 
     <android.support.design.widget.FloatingActionButton

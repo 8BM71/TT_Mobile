@@ -14,10 +14,10 @@
             android:id="@+id/nav_task"
             android:icon="@drawable/ic_access_time_black_24dp"
             android:title="@string/drawer_menu_tasks" />
-        <item
+<!--        <item
             android:id="@+id/nav_setting"
             android:icon="@drawable/ic_settings_black_24dp"
-            android:title="@string/drawer_menu_settings" />
+            android:title="@string/drawer_menu_settings" />-->
         <item
             android:id="@+id/nav_logout"
             android:icon="@drawable/ic_exit"

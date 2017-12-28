@@ -3,11 +3,16 @@ package com.tpu.mobile.timetracker.Project;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.apollographql.apollo.ApolloClient;
+import com.apollographql.apollo.api.Response;
+import com.apollographql.apollo.rx2.Rx2Apollo;
+import com.tpu.mobile.timetracker.Database.Controller.ProjectController;
 import com.tpu.mobile.timetracker.Database.Model.Project;
 import com.tpu.mobile.timetracker.Database.Model.Task;
 import com.tpu.mobile.timetracker.Database.Model.Workspace;
@@ -17,6 +22,10 @@ import com.tpu.mobile.timetracker.Main.MainActivity;
 
 import java.util.List;
 
+import api.RemoveProject;
+import api.UpdateProject;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.observers.DisposableObserver;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -25,24 +34,27 @@ import io.realm.RealmResults;
  */
 
 public class ProjectRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    ApolloClient client;
+    Realm realm;
     Context context;
     List<Project> projects;
-    Workspace workspace;
-    Realm realm;
+    ProjectController projectController;
 
-    public ProjectRecyclerViewAdapter(Context context, List<Project> projects, Workspace workspace, Realm realm) {
+    public ProjectRecyclerViewAdapter(Context context, ApolloClient client, Realm realm, List<Project> projects) {
         this.context = context;
-        this.projects = projects;
-        this.workspace = workspace;
         this.realm = realm;
+        this.client = client;
+        this.projects = projects;
+        projectController = new ProjectController(realm);
     }
 
     public void setProjects(RealmResults<Project> projects) {
         this.projects = projects;
+        notifyDataSetChanged();
     }
 
-    public void setWorkspace(Workspace workspace) {
-        this.workspace = workspace;
+    public void setWorkspace(Workspace workspace) { //delete this method
+        notifyDataSetChanged();
     }
 
     @Override
@@ -63,7 +75,7 @@ public class ProjectRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVie
         vh.baseLayout.close(false);
         vh.textName.setText(project.getName());
 
-        if (project.getDescription().equals(""))
+        if (project.getDescription() == null || project.getDescription().equals(""))
             vh.textDescription.setText("No description");
         else
             vh.textDescription.setText(project.getDescription());
@@ -98,8 +110,6 @@ public class ProjectRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVie
         vh.bOpen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //Intent intent = new Intent(context, TaskActivity.class);
-                //intent.putExtra("projectID", project.getId());
                 Intent intent = new Intent(context, MainActivity.class);
                 intent.putExtra("projectID", project.getId());
                 intent.putExtra("fragmentID", R.id.nav_task);
@@ -119,13 +129,36 @@ public class ProjectRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVie
         vh.bDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (projects.get(position).getId() != 1) {
-                    realm.beginTransaction();
-                    realm.where(Task.class).equalTo("project.id", project.getId()).findAll().deleteAllFromRealm();
-                    projects.get(position).deleteFromRealm();
-                    realm.commitTransaction();
-                    notifyItemRemoved(position);
-                    notifyItemRangeChanged(position, projects.size());
+                vh.bDelete.setClickable(false);
+                final String idProject = projects.get(position).getId();
+                if (!idProject.equals(projects.get(0).getId())) {
+                    Rx2Apollo.from(client.mutate(new RemoveProject(idProject)))
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribeWith(new DisposableObserver<Response<RemoveProject.Data>>() {
+                                @Override
+                                public void onNext(Response<RemoveProject.Data> dataResponse) {
+                                    if (dataResponse.errors().isEmpty()) {
+                                        if (dataResponse.data().removeProject())
+                                            projectController.removeProject(idProject);
+
+                                        Log.d("myLog", "removeProjects-data:" + dataResponse.data());
+                                        Log.d("myLog", "removeProjects-error:" + dataResponse.errors());
+                                    }
+                                }
+
+                                @Override
+                                public void onError(Throwable e) {
+                                    e.printStackTrace();
+                                    vh.bDelete.setClickable(true);
+                                }
+
+                                @Override
+                                public void onComplete() {
+                                    vh.bDelete.setClickable(true);
+                                    notifyItemRemoved(position);
+                                    notifyItemRangeChanged(position, projects.size());
+                                }
+                            });
                 }
                 else
                     Toast.makeText(context, "Default project can't be removed.", Toast.LENGTH_LONG).show();

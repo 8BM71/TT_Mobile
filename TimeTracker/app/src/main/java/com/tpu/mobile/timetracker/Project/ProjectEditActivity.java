@@ -5,18 +5,31 @@ import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.apollographql.apollo.ApolloClient;
+import com.apollographql.apollo.api.Response;
+import com.apollographql.apollo.rx2.Rx2Apollo;
 import com.jaredrummler.android.colorpicker.ColorPickerView;
+import com.tpu.mobile.timetracker.Database.Controller.ProjectController;
+import com.tpu.mobile.timetracker.Database.Controller.WorkspaceController;
 import com.tpu.mobile.timetracker.Database.Model.Project;
 import com.tpu.mobile.timetracker.Database.Model.Workspace;
+import com.tpu.mobile.timetracker.MainApplication;
 import com.tpu.mobile.timetracker.R;
 
 import java.util.List;
 
+import api.CreateProject;
+import api.UpdateProject;
+import api.type.ProjectInput;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.observers.DisposableObserver;
 import io.realm.Realm;
 
 /**
@@ -24,46 +37,47 @@ import io.realm.Realm;
  */
 
 public class ProjectEditActivity extends AppCompatActivity implements ColorPickerView.OnColorChangedListener {
-    Project project;
+    ApolloClient client;
     Realm realm;
+    WorkspaceController workspaceController;
+    ProjectController projectController;
+    Project project;
+    Button tvSave;
     EditText etName, etDescription, etWorkspace;
     ColorPickerView colorPickerView;
     int color;
     List<Workspace> workspaces;
     Workspace workspace;
     String[] workspacesName;
+    String idProject, idWorkspace;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.project_activity_edit);
-
-        Realm.init(this);
-        realm = Realm.getDefaultInstance();
-
-        int id = getIntent().getIntExtra("projectID", 0);
-        project = realm.where(Project.class).equalTo("id", id).findFirst();
+        client = ((MainApplication)getApplication()).getApolloClient();
+        realm = ((MainApplication)getApplication()).getRealm();
+        workspaceController = new WorkspaceController(realm);
+        projectController = new ProjectController(realm);
+        idProject = getIntent().getStringExtra("projectID");
+        project = projectController.getProject(idProject);
         workspace = project.getWorkspace();
         if (workspace == null)
-            workspace = realm.where(Workspace.class).equalTo("id", 1).findFirst();
-        workspaces = realm.where(Workspace.class).findAll().sort("id");
+            workspace = workspaceController.getWorkspaces().get(0);
+        workspaces = workspaceController.getWorkspaces();
         workspacesName = new String[workspaces.size()];
         for (int i = 0; i < workspaces.size(); i++)
             workspacesName[i] = workspaces.get(i).getName();
 
         etName = (EditText) findViewById(R.id.etName);
         etName.setText(project.getName());
-
         etDescription = (EditText) findViewById(R.id.etDescription);
         etDescription.setText(project.getDescription());
-
         colorPickerView = (ColorPickerView) findViewById(R.id.colorView);
         colorPickerView.setOnColorChangedListener(this);
-
         etWorkspace = (EditText) findViewById(R.id.etWorkspace);
         etWorkspace.setText(workspace.getName());
-
         color = project.getColor();
         colorPickerView.setColor(color, true);
 
@@ -71,13 +85,11 @@ public class ProjectEditActivity extends AppCompatActivity implements ColorPicke
         tvBack.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //Intent intent = new Intent(ProjectEditActivity.this, ProjectActivity.class);
-                //startActivity(intent);
                 onBackPressed();
             }
         });
 
-        Button tvSave = (Button) findViewById(R.id.tvSave);
+        tvSave = (Button) findViewById(R.id.tvSave);
         tvSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -85,10 +97,13 @@ public class ProjectEditActivity extends AppCompatActivity implements ColorPicke
                     etName.setError("Name can't be empty!");
                     return;
                 }
+                if (etName.getText().toString().length() < 3) {
+                    etName.setError("Name can't be less 3 symbols");
+                    return;
+                }
+                tvSave.setEnabled(false);
+                tvSave.setClickable(false);
                 editProject();
-                //Intent intent = new Intent(ProjectEditActivity.this, ProjectActivity.class);
-                //startActivity(intent);
-                onBackPressed();
             }
         });
 
@@ -119,12 +134,42 @@ public class ProjectEditActivity extends AppCompatActivity implements ColorPicke
 
     private void editProject()
     {
-        realm.beginTransaction();
-        project.setName(etName.getText().toString());
-        project.setDescription(etDescription.getText().toString());
-        project.setColor(color);
-        project.setWorkspace(realm.where(Workspace.class).equalTo("id", workspace.getId()).findFirst());
-        realm.commitTransaction();
+        final String name = etName.getText().toString();
+        final String description = etDescription.getText().toString();
+        ProjectInput projectInput = ProjectInput.builder()
+                .name(name)
+                .color(color)
+                .build();
+
+        Rx2Apollo.from(client.mutate(new UpdateProject(idProject, projectInput)))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<UpdateProject.Data>>() {
+                    @Override
+                    public void onNext(Response<UpdateProject.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty()) {
+                            if (dataResponse.data().updateProject())
+                            projectController.updateProject(idProject,
+                                    name, description, color, idWorkspace);
+
+                            Log.d("myLog", "createProjects-data:" + dataResponse.data());
+                            Log.d("myLog", "createProjects-error:" + dataResponse.errors());
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                        tvSave.setEnabled(true);
+                        tvSave.setClickable(true);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        onBackPressed();
+                        tvSave.setEnabled(true);
+                        tvSave.setClickable(true);
+                    }
+                });
     }
 
     @Override

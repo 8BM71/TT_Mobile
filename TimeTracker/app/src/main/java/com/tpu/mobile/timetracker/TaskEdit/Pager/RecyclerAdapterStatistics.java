@@ -3,6 +3,7 @@ package com.tpu.mobile.timetracker.TaskEdit.Pager;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -18,14 +19,27 @@ import android.widget.NumberPicker;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
+import com.apollographql.apollo.ApolloClient;
+import com.apollographql.apollo.api.Response;
+import com.apollographql.apollo.rx2.Rx2Apollo;
+import com.tpu.mobile.timetracker.Database.Controller.ProjectController;
+import com.tpu.mobile.timetracker.Database.Controller.TaskController;
 import com.tpu.mobile.timetracker.Database.Model.StatisticsTask;
+import com.tpu.mobile.timetracker.Database.Model.Task;
+import com.tpu.mobile.timetracker.Main.MainActivity;
 import com.tpu.mobile.timetracker.R;
+import com.tpu.mobile.timetracker.TaskEdit.TaskEditActivity;
 
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import api.UpdateTask;
+import api.UpdateTimeEntry;
+import api.type.TimeEntryInput;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.observers.DisposableObserver;
 import io.realm.Realm;
 
 
@@ -34,21 +48,25 @@ import io.realm.Realm;
  */
 
 public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
+    ApolloClient client;
+    Realm realm;
+    ProjectController projectController;
+    TaskController taskController;
     Context context;
     List<StatisticsTask> stats;
-    List<ChangeStat> changeStats;
-    Realm realm;
+    boolean[] changeStats;
 
-    public RecyclerAdapterStatistics(Context context, List<StatisticsTask> stats, Realm realm) {
+
+    public RecyclerAdapterStatistics(Context context, ApolloClient client, Realm realm, List<StatisticsTask> stats) {
         this.context = context;
         this.stats = stats;
         this.realm = realm;
-        changeStats = new ArrayList<ChangeStat>();
-        if (changeStats != null)
-            changeStats.clear();
-        for (int i = 0; i < stats.size(); i++)
-            changeStats.add(new ChangeStat());
+        this.client = client;
+        projectController = new ProjectController(realm);
+        taskController = new TaskController(realm);
+        changeStats = new boolean[stats.size()];
+        for (int i = 0; i < changeStats.length; i++)
+            changeStats[i] = false;
     }
 
     @Override
@@ -60,14 +78,20 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
     public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
         final TaskStatViewHolder vh = (TaskStatViewHolder)holder;
         final StatisticsTask stat = stats.get(position);
-        final ChangeStat changeStat = changeStats.get(position);
-        changeStat.setId(stat.getId());
 
         vh.init(stat.getStart(), stat.getEnd());
         vh.tvStartDate.setText(vh.calculateDate(stat.getStart()));
         vh.tvEndDate.setText(vh.calculateDate(stat.getEnd()));
         vh.tvTime.setText(vh.calculateTime(stat.getDuration()));
 
+        if ((position == stats.size() - 1) && (stat.getTask().getState() == Task.TASK_RUNNING))
+        {
+            vh.tvStartDate.setEnabled(false);
+            vh.tvEndDate.setEnabled(false);
+            vh.tvTime.setEnabled(false);
+            vh.layoutTracker.setAlpha(0.5f);
+            return;
+        }
 
         vh.etDescription.setText(stat.getNote());
         vh.tvNote.setText("Note (" + (200 - vh.etDescription.length()) + "):");
@@ -75,21 +99,21 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
         vh.tvStartDate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                showDateDialog(vh, "start", stat, changeStat);
+                showDateDialog(vh, "start", stat, position);
             }
         });
 
         vh.tvEndDate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                showDateDialog(vh, "end", stat, changeStat);
+                showDateDialog(vh, "end", stat, position);
             }
         });
 
         vh.tvTime.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                showTimeDialog(vh, stat, changeStat);
+                showTimeDialog(vh, stat, position);
             }
         });
 
@@ -111,7 +135,7 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
             @Override
             public void onFocusChange(View view, boolean hasFocus) {
                 if (!hasFocus)
-                    updateDescriptionTask(stat, changeStat, vh.etDescription.getText().toString());
+                    updateDescriptionTask(stat, vh.etDescription.getText().toString());
             }
         });
 
@@ -120,7 +144,7 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH ||
                         actionId == EditorInfo.IME_ACTION_DONE)
-                    updateDescriptionTask(stat, changeStat, vh.etDescription.getText().toString());
+                    updateDescriptionTask(stat, vh.etDescription.getText().toString());
                 return false;
             }
         });
@@ -129,28 +153,27 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
                 if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_BACK)
-                    updateDescriptionTask(stat, changeStat, vh.etDescription.getText().toString());
+                    updateDescriptionTask(stat, vh.etDescription.getText().toString());
                 return false;
             }
         });
     }
 
-    private void updateDescriptionTask(StatisticsTask statistics,
-                                       ChangeStat changeStat, String note)
+    private void updateDescriptionTask(StatisticsTask statistics, String note)
     {
         if (note.equals(statistics.getNote()))
             return;
         else
         {
-            changeStat.setDescription(note);
-            realm.beginTransaction();
-            statistics.setNote(note);
-            realm.commitTransaction();
+           // changeStat.setDescription(note);
+            //realm.beginTransaction();
+           // statistics.setNote(note);
+            //realm.commitTransaction();
         }
     }
 
     private void showDateDialog(final TaskStatViewHolder vh, final String time,
-                                final StatisticsTask stat, final ChangeStat changeStat) {
+                                final StatisticsTask stat, final int position) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(context);
         View view = LayoutInflater.from(context).inflate(R.layout.dialog_date_time, null, false);
         builder.setView(view);
@@ -208,32 +231,32 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
                             vh.tvStartDate.setText(date);
                             vh.start = dateLong;
 
-                            changeStat.setStartManual(dateLong);
-                            realm.beginTransaction();
+                            changeStats[position] = true;
+                            //realm.beginTransaction();
                             stat.setStart(dateLong);
-                            realm.commitTransaction();
+                            //realm.commitTransaction();
                         }
                         else {
                             vh.tvEndDate.setText(date);
                             vh.end = calendar.getTimeInMillis();
 
-                            changeStat.setEndManual(dateLong);
-                            realm.beginTransaction();
+                            changeStats[position] = true;
+                            //realm.beginTransaction();
                             stat.setEnd(dateLong);
-                            realm.commitTransaction();
+                            //realm.commitTransaction();
                         }
 
                         long duration = vh.end - vh.start;
-                        realm.beginTransaction();
+                        //realm.beginTransaction();
                         if (duration > 0) {
-                            changeStat.setDurationManual(vh.end - vh.start);
+                            changeStats[position] = true;
                             stat.setDuration(vh.end - vh.start);
                         }
                         else {
-                            changeStat.setDurationManual(0);
+                            changeStats[position] = true;
                             stat.setDuration(0);
                         }
-                        realm.commitTransaction();
+                        //realm.commitTransaction();
                         vh.calculateTime();
                     }
                 });
@@ -242,7 +265,7 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
     }
 
     private void showTimeDialog(final TaskStatViewHolder vh,
-                                final StatisticsTask stat, final ChangeStat changeStat) {
+                                final StatisticsTask stat, final int position) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         View view = LayoutInflater.from(context).inflate(R.layout.dialog_time_setting, null, false);
         final NumberPicker numHour = (NumberPicker)view.findViewById(R.id.numHour);
@@ -287,10 +310,10 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
                         long dateLong = (long)(h * 3600 + m * 60 + s) * 1000;
                         Log.d("myLog", "DateLong = " + dateLong + "; h = " + (h * 3600) + m + "(m * 60)");
 
-                        changeStat.setDurationManual(dateLong);
-                        realm.beginTransaction();
+                        changeStats[position] = true;
+                        //realm.beginTransaction();
                         stat.setDuration(dateLong);
-                        realm.commitTransaction();
+                        //realm.commitTransaction();
 
                     }
                 });
@@ -308,40 +331,58 @@ public class RecyclerAdapterStatistics extends RecyclerView.Adapter<RecyclerView
     public void Save()
     {
 
-        //Description!!!!!!!! Переписать, потому что не фиксируется
-
-        for (int i = 0; i < changeStats.size(); i++)
-        {
-            ChangeStat changeStat = changeStats.get(i);
-            Log.d("MyChanges", "---------------");
-            Log.d("MyChanges", "ChangeStat = " + i);
-            Log.d("MyChanges", "ChangeStat.isChanged = " + changeStat.isChanged);
-            Log.d("MyChanges", "ChangeStat.getState() = " + changeStat.getState());
-            Log.d("MyChanges", "ChangeStat.getStartManual() = " + changeStat.getStartManual());
-            Log.d("MyChanges", "ChangeStat.getEndManual() = " + changeStat.getEndManual());
-            Log.d("MyChanges", "ChangeStat.getDurationManual() = " + changeStat.getDurationManual());
-            Log.d("MyChanges", "ChangeStat.getDescription() = " + changeStat.getDescription());
+        final List<StatisticsTask> statits = new ArrayList<StatisticsTask>();
+        for (int i = 0; i < changeStats.length; i++) {
+            if (changeStats[i])
+                statits.add(stats.get(i));
         }
 
+        final boolean[] completed = new boolean[statits.size()];
 
-/*        for (int i = 0; i < changeStats.size(); i++)
+        for (int i = 0; i < statits.size(); i++)
         {
-            ChangeStat change = changeStats.get(i);
-            if (!change.isChanged)
-                continue;
-            StatisticsTask stat = realm.where(StatisticsTask.class).equalTo("id", change.getId()).findFirst();
-            realm.beginTransaction();
-            if (change.getState() != -1)
-                stat.setState(change.getState());
-            if (change.getDescription() != null)
-                stat.setDescription(change.getDescription());
-            if (change.getStartManual() != -1)
-                stat.setStartManual(change.getStartManual());
-            if (change.getEndManual() != -1)
-                stat.setEndManual(change.getEndManual());
-            if (change.getEndManual() != -1)
-                stat.setDurationManual(change.getDurationManual());
-            realm.beginTransaction();
-        }*/
+            final StatisticsTask st = statits.get(i);
+            final String idStat = statits.get(i).getId();
+            TimeEntryInput timeEntry = TimeEntryInput.builder()
+                    .startDate(Long.toString(statits.get(i).getStart()))
+                    .endDate(Long.toString(statits.get(i).getEnd()))
+                    .duration((int)statits.get(i).getDuration())
+                    .build();
+
+            final int I = i;
+            Rx2Apollo.from(client.mutate(new UpdateTimeEntry(idStat, timeEntry)))
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeWith(new DisposableObserver<Response<UpdateTimeEntry.Data>>() {
+                        @Override
+                        public void onNext(Response<UpdateTimeEntry.Data> dataResponse) {
+                            if (dataResponse.errors().isEmpty()) {
+                                if (dataResponse.data().updateTimeEntry())
+                                    taskController.updateStat(idStat, st.getStart(), st.getEnd(), st.getDuration());
+                                completed[I] = true;
+                            }
+                            Log.d("myLog", "updateStat-error:" + dataResponse.errors());
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            e.printStackTrace();
+                            for (boolean ok : completed)
+                                if (!ok) return;
+                            Intent intent = new Intent(context, MainActivity.class);
+                            context.startActivity(intent);
+
+                        }
+
+                        @Override
+                        public void onComplete() {
+                            for (boolean ok : completed)
+                                if (!ok) return;
+                            Intent intent = new Intent(context, MainActivity.class);
+                            context.startActivity(intent);
+                            ///
+                        }
+                    });
+        }
+
     }
 }

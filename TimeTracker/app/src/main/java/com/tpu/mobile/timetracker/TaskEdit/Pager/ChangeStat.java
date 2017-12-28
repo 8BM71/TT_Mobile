@@ -5,7 +5,7 @@ package com.tpu.mobile.timetracker.TaskEdit.Pager;
  */
 
 public class ChangeStat {
-    int id;
+    String id;
     int state;
     String description;
     long durationManual;
@@ -13,10 +13,11 @@ public class ChangeStat {
     long endManual;
     boolean isChanged;
 
+
     public ChangeStat()
     {
         isChanged = false;
-        id = -1;
+        id = "1";
         state = -1;
         description = null;
         durationManual = -1;
@@ -24,11 +25,11 @@ public class ChangeStat {
         endManual = -1;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 

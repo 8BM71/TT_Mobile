@@ -6,10 +6,16 @@ import android.graphics.Color;
 import android.os.SystemClock;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.apollographql.apollo.ApolloClient;
+import com.apollographql.apollo.api.Response;
+import com.apollographql.apollo.rx2.Rx2Apollo;
+import com.tpu.mobile.timetracker.Database.Controller.ProjectController;
+import com.tpu.mobile.timetracker.Database.Controller.TaskController;
 import com.tpu.mobile.timetracker.Database.Model.Project;
 import com.tpu.mobile.timetracker.Database.Model.StatisticsTask;
 import com.tpu.mobile.timetracker.Database.Model.Task;
@@ -18,9 +24,16 @@ import com.tpu.mobile.timetracker.Task.ItemTaskTouchHelper.ItemTaskTouchHelperAd
 import com.tpu.mobile.timetracker.TaskEdit.TaskEditActivity;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import api.GetProjects;
+import api.RemoveTask;
+import api.StartTask;
+import api.StopTimeEntry;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.observers.DisposableObserver;
 import io.realm.Realm;
 
 /**
@@ -30,17 +43,23 @@ import io.realm.Realm;
 public class TaskRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         implements ItemTaskTouchHelperAdapter{
     Context context;
+    ApolloClient client;
+    Realm realm;
+    ProjectController projectController;
+    TaskController taskController;
     List<ModelTask> models;
     List<Task> tasks;
     Project project;
-    Realm realm;
     int types[];
 
-    public TaskRecyclerViewAdapter(Context context, List<ModelTask> models, List<Task> tasks, Project project, Realm realm) {
+    public TaskRecyclerViewAdapter(Context context, ApolloClient client, Realm realm, List<ModelTask> models, List<Task> tasks, Project project) {
         this.context = context;
+        this.realm = realm;
+        this.client = client;
         this.tasks = tasks;
         this.project = project;
-        this.realm = realm;
+        projectController = new ProjectController(realm);
+        taskController = new TaskController(realm);
         setModels(models);
     }
 
@@ -108,7 +127,7 @@ public class TaskRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.V
                 vh.textDescription.setText(project.getName());
             } else {
                 vh.imageIndicator.setBackgroundColor(project.getColor());
-                if (task.getDescription().equals(""))
+                if (task.getDescription() == null || task.getDescription().equals(""))
                     vh.textDescription.setText("No description");
                 else
                     vh.textDescription.setText(task.getDescription());
@@ -133,30 +152,16 @@ public class TaskRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.V
                 public void onClick(View v) {
                     if (task.getState() == Task.TASK_STOPPED ||
                             task.getState() == Task.TASK_CREATED) {
-                        realm.beginTransaction();
-                        task.setTimeCreated(System.currentTimeMillis());/////////////
-                        task.setTimeStart(System.currentTimeMillis());
-                        task.setState(Task.TASK_RUNNING);
-                        task.setDuration(vh.getStep());
-                        realm.commitTransaction();
-                        vh.start();
-                        update();
+                        vh.ibActive.setClickable(false);
+                        vh.layoutClickable.setClickable(false);
+                        startTask(vh, task);
                         return;
                     }
 
                     if (task.getState() == Task.TASK_RUNNING) {
-                        realm.beginTransaction();
-                        task.setDuration(vh.getCurrentStep());
-                        task.setState(Task.TASK_STOPPED);
-                        task.setTimeFinish(System.currentTimeMillis());
-                        StatisticsTask stat = realm.createObject(StatisticsTask.class);
-                        stat.setId(realm.where(StatisticsTask.class).max("id").intValue() + 1);
-                        stat.setDuration(task.getDuration());
-                        stat.setStart(task.getTimeCreated());
-                        stat.setEnd(task.getTimeFinish());
-                        task.getStatistics().add(stat);
-                        realm.commitTransaction();
-                        vh.stop();
+                        vh.ibActive.setClickable(false);
+                        vh.layoutClickable.setClickable(false);
+                        finishTask(vh, task);
                         return;
                     }
                 }
@@ -179,6 +184,75 @@ public class TaskRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.V
         }
     }
 
+    private void startTask(final TaskViewHolder vh, final Task task)
+    {
+        vh.progressBar.setVisibility(View.VISIBLE);
+        Rx2Apollo.from(client.mutate(new StartTask(task.getId())))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<StartTask.Data>>() {
+                    @Override
+                    public void onNext(Response<StartTask.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty()) {
+                            Log.d("myLog", "startTask-data:" + dataResponse.data());
+                                taskController.startTask(task.getId(), dataResponse.data().startTask());
+                            }
+                            Log.d("myLog", "startTask-error:" + dataResponse.errors());
+                        }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        vh.progressBar.setVisibility(View.GONE);
+                        vh.layoutClickable.setClickable(true);
+                        vh.ibActive.setClickable(true);
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        vh.progressBar.setVisibility(View.GONE);
+                        vh.layoutClickable.setClickable(true);
+                        vh.ibActive.setClickable(true);
+                        vh.start();
+                        update();
+                    }
+                });
+
+    }
+
+    private void finishTask(final TaskViewHolder vh, final Task task)
+    {
+        vh.progressBar.setVisibility(View.VISIBLE);
+        Rx2Apollo.from(client.mutate(new StopTimeEntry(task.getIdActiveStat())))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<StopTimeEntry.Data>>() {
+                    @Override
+                    public void onNext(Response<StopTimeEntry.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty()) {
+                            Log.d("myLog", "stopTask-data:" + dataResponse.data());
+                            taskController.finishTask(task.getId(), dataResponse.data().stopTimeEntry());
+                        }
+                        Log.d("myLog", "stopTask-error:" + dataResponse.errors());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        vh.progressBar.setVisibility(View.GONE);
+                        vh.layoutClickable.setClickable(true);
+                        vh.ibActive.setClickable(true);
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        vh.progressBar.setVisibility(View.GONE);
+                        vh.ibActive.setClickable(true);
+                        vh.layoutClickable.setClickable(true);
+                        vh.stop();
+                        update();
+                    }
+                });
+    }
+
 
     public void update()
     {
@@ -195,31 +269,30 @@ public class TaskRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.V
     @Override
     public void onItemDismiss(RecyclerView.ViewHolder viewHolder) {
         final int position = viewHolder.getAdapterPosition();
-        Task task = models.get(position).getTask();
-        final Task deletedTask = realm.copyFromRealm(task);
-        final int idProject = deletedTask.getProject().getId();
-        deletedTask.setProject(realm.where(Project.class).equalTo("id", idProject).findFirst());
+        final Task task = models.get(position).getTask();
+        final String idTask = task.getId();
+        Rx2Apollo.from(client.mutate(new RemoveTask(idTask)))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<Response<RemoveTask.Data>>() {
+                    @Override
+                    public void onNext(Response<RemoveTask.Data> dataResponse) {
+                        if (dataResponse.errors().isEmpty()) {
+                            Log.d("myLog", "removeTask-data:" + dataResponse.data());
+                            if (dataResponse.data().removeTask())
+                                taskController.removeTask(idTask);
+                        }
+                        Log.d("myLog", "removeTask-error:" + dataResponse.errors());
+                    }
 
-        realm.beginTransaction();
-        task.deleteFromRealm();
-        realm.commitTransaction();
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
 
-        update();
-
-        String name = deletedTask.getName();
-        Snackbar snackbar = Snackbar.make(viewHolder.itemView,
-                name + " is removed!", Snackbar.LENGTH_LONG);
-        snackbar.setAction("UNDO", new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                realm.beginTransaction();
-                realm.copyToRealm(deletedTask);
-                realm.commitTransaction();
-                update();
-            }
-        });
-
-        snackbar.setActionTextColor(Color.YELLOW);
-        snackbar.show();
+                    @Override
+                    public void onComplete() {
+                        update();
+                    }
+                });
     }
 }

@@ -8,7 +8,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
 
+import com.apollographql.apollo.ApolloClient;
+import com.tpu.mobile.timetracker.Database.Controller.ProjectController;
+import com.tpu.mobile.timetracker.Database.Controller.TaskController;
 import com.tpu.mobile.timetracker.Database.Model.Project;
+import com.tpu.mobile.timetracker.MainApplication;
 import com.tpu.mobile.timetracker.ProjectInfo.Pager.PageAdapter;
 import com.tpu.mobile.timetracker.R;
 
@@ -19,20 +23,25 @@ import io.realm.Realm;
  */
 
 public class ProjectInfoActivity extends AppCompatActivity {
-    public ViewPager viewPager;
-    public PageAdapter pagerAdapter;
-    public FragmentManager fragmentManager;
+    ViewPager viewPager;
+    PageAdapter pagerAdapter;
+    FragmentManager fragmentManager;
+    ApolloClient client;
     Realm realm;
+    ProjectController projectController;
+    TaskController taskController;
+    String idProject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.project_activity_info);
-
-        Realm.init(this);
-        realm = Realm.getDefaultInstance();
-        int idProject = getIntent().getIntExtra("projectID", 0);
-        Project project = realm.where(Project.class).equalTo("id", idProject).findFirst();
+        client = ((MainApplication)getApplication()).getApolloClient();
+        realm = ((MainApplication)getApplication()).getRealm();
+        projectController = new ProjectController(realm);
+        taskController = new TaskController(realm);
+        idProject = getIntent().getStringExtra("projectID");
+        Project project = projectController.getProject(idProject);
         TextView tvName = (TextView)findViewById(R.id.tvNameProject);
         tvName.setText(project.getName());
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
