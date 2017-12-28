@@ -148,8 +148,8 @@ public class Task extends RealmObject {
         if (!(obj instanceof Task)) return false;
 
         Task task = (Task) obj;
-        return this.getId().equals(task.getId()) &&
-                this.getName().equals(task.getName()) &&
-                this.getDescription().equals(task.getDescription());
+        return this.getId().equals(task.getId());
+                //&& this.getName().equals(task.getName()) &&
+                //this.getDescription().equals(task.getDescription());
     }
 }

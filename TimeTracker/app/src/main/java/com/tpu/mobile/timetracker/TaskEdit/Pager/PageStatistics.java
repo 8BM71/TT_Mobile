@@ -83,6 +83,9 @@ public class PageStatistics extends Fragment  {
 
     public void Save()
     {
-        adapter.Save();
+        if (taskController.getTask(idTask).getState() != Task.TASK_CREATED)
+            adapter.Save();
+        else
+            getActivity().onBackPressed();
     }
 }
